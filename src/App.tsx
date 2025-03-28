@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from './components/theme-provider';
-import { LoadUser } from './pages';
+import { LoadUser, Login } from './pages';
 
 
 const App = () => {
@@ -8,7 +8,7 @@ const App = () => {
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <BrowserRouter>
         <Routes>
-          <Route path='/' element={<LoadUser />} />
+          <Route path='/' element={<Login />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

@@ -1,3 +1,6 @@
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+
+
 const Navbar = () => {
   return (
     <div>
@@ -13,7 +16,7 @@ const Navbar = () => {
               alt="Flowbite Logo"
             />
             <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-              Flowbite
+              AU Activity Record
             </span>
           </a>
           <button
@@ -41,12 +44,11 @@ const Navbar = () => {
             </svg>
           </button>
           <div className="hidden w-full md:block md:w-auto" id="navbar-default">
-            <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0">
+            <ul className="font-medium flex flex-col md:flex-row items-center p-4 md:p-0 mt-4 border border-gray-100 rounded-lg md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0">
               <li>
                 <a
                   href="#"
-                  className="block py-2 px-3 text-white bg-blue-700 rounded-sm md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-500"
-                  aria-current="page"
+                  className="block py-2 px-3 text-gray-900 rounded-sm  md:border-0 md:hover:bg-card md:p-0 dark:text-white md:hover:text-gray-400 md:dark:hover:text-gray-400 dark:hover:text-white"
                 >
                   Home
                 </a>
@@ -54,10 +56,13 @@ const Navbar = () => {
               <li>
                 <a
                   href="#"
-                  className="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100  md:border-0 md:hover:bg-card md:p-0 dark:text-white md:dark:hover:text-red-500 dark:hover:bg-card dark:hover:text-white"
+                  className="block py-2 px-3 text-gray-900 rounded-sm  md:border-0 md:hover:bg-card md:p-0 dark:text-white md:hover:text-gray-400 md:dark:hover:text-gray-400 dark:hover:text-white"
                 >
                   About
                 </a>
+              </li>
+              <li>
+                <ThemeToggle />
               </li>
             </ul>
           </div>

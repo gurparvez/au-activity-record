@@ -3,11 +3,15 @@ import { useForm } from 'react-hook-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { account } from '@/api/appwrite';
+import { OAuthProvider } from 'appwrite';
+import { useTheme } from '@/components/theme-provider';
 
 const Login = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
 
   const { register, handleSubmit } = useForm();
+  const themeContext = useTheme();
 
   const onSubmit = async (data: any) => {
     try {
@@ -26,9 +30,9 @@ const Login = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-              type="text"
-              {...register('auid', { required: 'AUID is required' })}
-              placeholder="AUID"
+              type="email"
+              {...register('email', { required: 'Email is required' })}
+              placeholder="Email"
               className="w-full"
             />
             <Input
@@ -46,6 +50,31 @@ const Login = () => {
               Login
             </Button>
           </form>
+          <div className="flex flex-row items-center justify-evenly my-3">
+            <div
+              className="flex-1 border-t"
+              style={{ borderColor: themeContext.theme === 'dark' ? 'white' : 'black' }}
+            ></div>
+            <span className="mx-3">OR</span>
+            <div
+              className="flex-1 border-t"
+              style={{ borderColor: themeContext.theme === 'dark' ? 'white' : 'black' }}
+            ></div>
+          </div>
+          <Button
+            onClick={() => {
+              account.createOAuth2Session(
+                OAuthProvider.Google, // provider
+                'https://localhost:5173/', // redirect here on success
+                'https://localhost:5173/', // redirect here on failure
+                // ['repo', 'user'] // scopes (optional)
+              );
+            }}
+            variant="secondary"
+            className='w-full'
+          >
+            Sign in with Google
+          </Button>
         </CardContent>
       </Card>
     </div>

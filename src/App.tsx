@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { ThemeProvider } from './components/theme-provider';
-import { LoadUser, Login } from './pages';
+import { LoadUser, Login, Register } from './pages';
 
 
 const App = () => {
@@ -9,6 +9,7 @@ const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Login />} />
+          <Route path='/register' element={<Register />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

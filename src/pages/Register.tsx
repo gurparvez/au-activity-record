@@ -2,25 +2,38 @@ import { useForm } from 'react-hook-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { account } from '@/api/appwrite';
+import { account, loginWithGoogle } from '@/api/appwrite';
 import { OAuthProvider } from 'appwrite';
 import { useTheme } from '@/components/theme-provider';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 
 const Register = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
-
+  const [backendError, setBackendError] = useState<string | null>(null);
+  const { register, handleSubmit } = useForm();
   const themeContext = useTheme();
 
-  const onSubmit = (data: any) => {
-    if (data.password !== data.confirmPassword) {
-      alert('Passwords do not match');
-      return;
+  const navigate = useNavigate();
+
+  const onSubmit = async (data: any) => {
+    setBackendError(null); // Clear any previous errors
+    try {
+      console.log('Register form submitted', data);
+      if (data.password !== data.confirmPassword) {
+        throw Error('Passwords should match!');
+      }
+      const username = data.email.split('@')[0]; // Extract username from email
+      await account.create(username, data.email, data.password);
+      await account.createEmailPasswordSession(data.email, data.password);
+      navigate('/');
+    } catch (error) {
+      console.log(error);
+      if (error instanceof Error) {
+        setBackendError(error.message);
+      } else {
+        setBackendError('An unknown error occurred');
+      }
     }
-    console.log('Register form submitted', data);
   };
 
   return (
@@ -31,11 +44,10 @@ const Register = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
               type="text"
-              placeholder="AUID"
-              {...register('auid', { required: 'AUID is required' })}
+              placeholder="Email"
+              {...register('email', { required: 'Email is required' })}
               className="w-full"
             />
-            {errors.auid && <p className="text-red-500 text-sm">{String(errors.auid.message)}</p>}
 
             <Input
               type="password"
@@ -43,9 +55,6 @@ const Register = () => {
               {...register('password', { required: 'Password is required' })}
               className="w-full"
             />
-            {errors.password && (
-              <p className="text-red-500 text-sm">{String(errors.password.message)}</p>
-            )}
 
             <Input
               type="password"
@@ -53,9 +62,6 @@ const Register = () => {
               {...register('confirmPassword', { required: 'Please confirm your password' })}
               className="w-full"
             />
-            {errors.confirmPassword && (
-              <p className="text-red-500 text-sm">{String(errors.confirmPassword.message)}</p>
-            )}
 
             <Button type="submit" className="w-full">
               Register
@@ -72,15 +78,11 @@ const Register = () => {
               style={{ borderColor: themeContext.theme === 'dark' ? 'white' : 'black' }}
             ></div>
           </div>
+
+          {backendError && <p className="text-red-500 text-sm text-center mb-2">{backendError}</p>}
+
           <Button
-            onClick={() => {
-              account.createOAuth2Session(
-                OAuthProvider.Google, // provider
-                'https://localhost:5173/', // redirect here on success
-                'https://localhost:5173/', // redirect here on failure
-                // ['repo', 'user'] // scopes (optional)
-              );
-            }}
+            onClick={loginWithGoogle}
             variant="secondary"
             className="w-full"
           >

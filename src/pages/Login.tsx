@@ -3,9 +3,10 @@ import { useForm } from 'react-hook-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { account } from '@/api/appwrite';
+import { account, loginWithGoogle } from '@/api/appwrite';
 import { OAuthProvider } from 'appwrite';
 import { useTheme } from '@/components/theme-provider';
+import { useNavigate } from 'react-router';
 
 const Login = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
@@ -13,12 +14,20 @@ const Login = () => {
   const { register, handleSubmit } = useForm();
   const themeContext = useTheme();
 
+  const navigate = useNavigate();
+
   const onSubmit = async (data: any) => {
     try {
-      setBackendError(null); // Clear any previous errors
+      setBackendError(null);
       console.log('Login form submitted', data);
+      await account.createEmailPasswordSession(data.email, data.password);
+      navigate('/');
     } catch (error) {
-      setBackendError('An unexpected error occurred. Please try again.');
+      if (error instanceof Error) {
+        setBackendError(error.message);
+      } else {
+        setBackendError('An unknown error occurred');
+      }
     }
   };
 
@@ -62,16 +71,9 @@ const Login = () => {
             ></div>
           </div>
           <Button
-            onClick={() => {
-              account.createOAuth2Session(
-                OAuthProvider.Google, // provider
-                'https://localhost:5173/', // redirect here on success
-                'https://localhost:5173/', // redirect here on failure
-                // ['repo', 'user'] // scopes (optional)
-              );
-            }}
+            onClick={loginWithGoogle}
             variant="secondary"
-            className='w-full'
+            className="w-full"
           >
             Sign in with Google
           </Button>

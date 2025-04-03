@@ -1,7 +1,11 @@
+import Navbar from "../components/Navbar"
 
 const HomeHOD = () => {
   return (
-    <div>HomeHOD</div>
+    <>
+    <Navbar />
+    Home
+    </>
   )
 }
 

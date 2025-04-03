@@ -1,33 +1,31 @@
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { account, loginWithGoogle } from '@/api/appwrite';
-import { OAuthProvider } from 'appwrite';
+import { account, myAppwrite } from '@/api/appwrite';
 import { useTheme } from '@/components/theme-provider';
-import { useState } from 'react';
 import { useNavigate } from 'react-router';
 
-const Register = () => {
-  const [backendError, setBackendError] = useState<string | null>(null);
-  const { register, handleSubmit } = useForm();
-  const themeContext = useTheme();
+interface LoginFormInputs {
+  email: string;
+  password: string;
+}
 
+const Login = () => {
+  const [backendError, setBackendError] = useState<string | null>(null);
+
+  const { register, handleSubmit } = useForm<LoginFormInputs>();
+  const themeContext = useTheme();
   const navigate = useNavigate();
 
-  const onSubmit = async (data: any) => {
-    setBackendError(null); // Clear any previous errors
+  const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
     try {
-      console.log('Register form submitted', data);
-      if (data.password !== data.confirmPassword) {
-        throw Error('Passwords should match!');
-      }
-      const username = data.email.split('@')[0]; // Extract username from email
-      await account.create(username, data.email, data.password);
+      setBackendError(null);
+      console.log('Login form submitted', data);
       await account.createEmailPasswordSession(data.email, data.password);
       navigate('/');
     } catch (error) {
-      console.log(error);
       if (error instanceof Error) {
         setBackendError(error.message);
       } else {
@@ -40,31 +38,28 @@ const Register = () => {
     <div className="flex justify-center items-center min-h-screen">
       <Card className="w-96 p-6 shadow-lg">
         <CardContent>
-          <h2 className="text-2xl font-bold text-center mb-4">Register</h2>
+          <h2 className="text-2xl font-bold text-center mb-4">Login</h2>
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-              type="text"
-              placeholder="Email"
+              type="email"
               {...register('email', { required: 'Email is required' })}
+              placeholder="Email"
               className="w-full"
             />
-
             <Input
               type="password"
-              placeholder="Password"
               {...register('password', { required: 'Password is required' })}
+              placeholder="Password"
               className="w-full"
             />
 
-            <Input
-              type="password"
-              placeholder="Confirm Password"
-              {...register('confirmPassword', { required: 'Please confirm your password' })}
-              className="w-full"
-            />
+            {backendError && (
+              <p className="text-red-500 text-sm text-center mb-2">{backendError}</p>
+            )}
 
             <Button type="submit" className="w-full">
-              Register
+              Login
             </Button>
           </form>
           <div className="flex flex-row items-center justify-evenly my-3">
@@ -78,11 +73,8 @@ const Register = () => {
               style={{ borderColor: themeContext.theme === 'dark' ? 'white' : 'black' }}
             ></div>
           </div>
-
-          {backendError && <p className="text-red-500 text-sm text-center mb-2">{backendError}</p>}
-
           <Button
-            onClick={loginWithGoogle}
+            onClick={myAppwrite.loginWithGoogle}
             variant="secondary"
             className="w-full"
           >
@@ -94,4 +86,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default Login;

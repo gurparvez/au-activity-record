@@ -10,11 +10,23 @@ client.setEndpoint(apiUrl).setProject(projectId);
 export const account = new Account(client);
 export { ID } from 'appwrite';
 
-export const loginWithGoogle = () => {
-  account.createOAuth2Session(
-    OAuthProvider.Google,
-    rootUrl, // redirect here on success
-    rootUrl, // redirect here on failure
-    // ['repo', 'user'] // scopes
-  );
-};
+class MyAppwrite {
+  loginWithGoogle = async () => {
+    await account.createOAuth2Session(
+      OAuthProvider.Google,
+      `${rootUrl}/auth`, // redirect here on success
+      `${rootUrl}/auth`, // redirect here on failure
+      // ['repo', 'user'] // scopes
+    );
+  };
+
+  // TODO: Implement getUserTeam
+  getUserTeam = async (userId: string) => {
+    return {
+      id: "hod",
+      name: "HOD",
+    }
+  }
+}
+
+export const myAppwrite = new MyAppwrite();

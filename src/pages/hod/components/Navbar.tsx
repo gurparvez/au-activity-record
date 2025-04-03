@@ -1,7 +1,20 @@
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-
+import { Button } from "@/components/ui/button";
+import { account } from "@/api/appwrite";
+import { useNavigate } from "react-router";
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await account.deleteSession("current");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   return (
     <div>
       <nav className="shadow-lg dark:shadow-gray-700/50">
@@ -63,6 +76,11 @@ const Navbar = () => {
               </li>
               <li>
                 <ThemeToggle />
+              </li>
+              <li>
+                <Button onClick={handleLogout} variant="destructive">
+                  Logout
+                </Button>
               </li>
             </ul>
           </div>

@@ -11,20 +11,22 @@ const Register = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
   const { register, handleSubmit } = useForm();
   const themeContext = useTheme();
-
   const navigate = useNavigate();
 
   const onSubmit = async (data: any) => {
-    setBackendError(null); // Clear any previous errors
+    setBackendError(null);
     try {
       console.log('Register form submitted', data);
       if (data.password !== data.confirmPassword) {
         throw Error('Passwords should match!');
       }
-      const username = data.email.split('@')[0]; // Extract username from email
-      await account.create(username, data.email, data.password);
-      await account.createEmailPasswordSession(data.email, data.password);
-      navigate('/');
+
+      const response = await myAppwrite.registerUser(data.name, data.email, data.password);
+      console.log(response);
+
+
+      await myAppwrite.sendUserVerificationEmail();
+      navigate('/verify');
     } catch (error) {
       console.log(error);
       if (error instanceof Error) {
@@ -43,25 +45,28 @@ const Register = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
               type="text"
+              placeholder="Name"
+              {...register('name', { required: 'Name is required' })}
+              className="w-full"
+            />
+            <Input
+              type="text"
               placeholder="Email"
               {...register('email', { required: 'Email is required' })}
               className="w-full"
             />
-
             <Input
               type="password"
               placeholder="Password"
               {...register('password', { required: 'Password is required' })}
               className="w-full"
             />
-
             <Input
               type="password"
               placeholder="Confirm Password"
               {...register('confirmPassword', { required: 'Please confirm your password' })}
               className="w-full"
             />
-
             <Button type="submit" className="w-full">
               Register
             </Button>
@@ -80,11 +85,7 @@ const Register = () => {
 
           {backendError && <p className="text-red-500 text-sm text-center mb-2">{backendError}</p>}
 
-          <Button
-            onClick={myAppwrite.loginWithGoogle}
-            variant="secondary"
-            className="w-full"
-          >
+          <Button onClick={myAppwrite.loginWithGoogle} variant="secondary" className="w-full">
             Sign in with Google
           </Button>
         </CardContent>

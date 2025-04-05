@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { account, myAppwrite } from '@/api/appwrite';
 import { useTheme } from '@/components/theme-provider';
-import { useNavigate } from 'react-router';
+import { NavLink, useNavigate } from 'react-router';
 
 interface LoginFormInputs {
   email: string;
@@ -23,7 +23,7 @@ const Login = () => {
     try {
       setBackendError(null);
       console.log('Login form submitted', data);
-      await account.createEmailPasswordSession(data.email, data.password);
+      await myAppwrite.loginUser(data.email, data.password);
       navigate('/');
     } catch (error) {
       if (error instanceof Error) {
@@ -73,13 +73,15 @@ const Login = () => {
               style={{ borderColor: themeContext.theme === 'dark' ? 'white' : 'black' }}
             ></div>
           </div>
-          <Button
-            onClick={myAppwrite.loginWithGoogle}
-            variant="secondary"
-            className="w-full"
-          >
+          <Button onClick={myAppwrite.loginWithGoogle} variant="secondary" className="w-full">
             Sign in with Google
           </Button>
+          <p className="text-center text-sm mt-4">
+            Don't have an account?{' '}
+            <NavLink to="/register" className="text-blue-400 hover:underline">
+              Register here
+            </NavLink>
+          </p>
         </CardContent>
       </Card>
     </div>

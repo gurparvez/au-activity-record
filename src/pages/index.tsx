@@ -6,6 +6,7 @@ import Register from "./auth/Register";
 import AuthCheck from "./auth/AuthCheck";
 import VerifyEmail from "./auth/VerifyEmail";
 import UpdateVerification from "./auth/UpdateVerification";
+import PrivateRoute from "./PrivateRoute";
 
 export {
   HomeHOD,
@@ -15,5 +16,6 @@ export {
   Register,
   AuthCheck,
   VerifyEmail,
-  UpdateVerification
+  UpdateVerification,
+  PrivateRoute,
 }

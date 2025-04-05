@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { account, myAppwrite } from '@/api/appwrite';
+import { myAppwrite } from '@/api/appwrite';
 import { useTheme } from '@/components/theme-provider';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';

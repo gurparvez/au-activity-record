@@ -1,8 +1,12 @@
+import Navbar from '@/pages/hod/components/Navbar';
 
 const HomeIQAC = () => {
   return (
-    <div>HomeIQAC</div>
-  )
-}
+    <>
+      <Navbar />
+      HomeIQAC
+    </>
+  );
+};
 
-export default HomeIQAC
+export default HomeIQAC;

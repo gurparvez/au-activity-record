@@ -1,5 +1,5 @@
 import { ROOT_URL } from '@/constants';
-import { Account, AppwriteException, Client, Databases, ID, OAuthProvider, Query } from 'appwrite';
+import { Account, Client, Databases, ID, OAuthProvider, Query } from 'appwrite';
 
 const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
 const API_URL = import.meta.env.VITE_APPWRITE_API_URL || '';
@@ -28,7 +28,7 @@ class MyAppwrite {
   };
 
   updateUserEmailVerification = async (userId: string, token: string) => {
-    const result = await account.updateVerification(
+    await account.updateVerification(
       userId, // userId
       token, // secret
     );
@@ -79,14 +79,13 @@ class MyAppwrite {
     return (await db.listDocuments(DB_ID, DEPARTMENT_COLLECTION_ID)).documents;
   };
 
-  getUserDepartment = async (userId: string) => {
-    console.log(userId);
+  getUserDepartmentId = async (userId: string) => {
     try {
       const departments = await db.listDocuments(DB_ID, USER_COLLECTION_ID, [
         Query.equal('userId', userId),
       ]);
       if (departments.documents.length > 0) {
-        return departments.documents[0]; // Return the department
+        return departments.documents[0].departmentId; // Return the department's id
       }
       return null; // Return null if no department is found
     } catch (error) {
@@ -95,7 +94,15 @@ class MyAppwrite {
     }
   };
 
-  getDepartment = async (departmentId: string) => {}
+  getDepartment = async (departmentId: string) => {
+    try {
+      const department = await db.getDocument(DB_ID, DEPARTMENT_COLLECTION_ID, departmentId)
+      return department
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  };
 
   loginWithGoogle = async () => {
     await account.createOAuth2Session(

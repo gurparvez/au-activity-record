@@ -1,12 +1,12 @@
-import Navbar from "../components/Navbar"
+import Navbar from '../components/Navbar';
 
 const HomeHOD = () => {
   return (
     <>
-    <Navbar />
-    Home
+      <Navbar />
+      Home
     </>
-  )
-}
+  );
+};
 
-export default HomeHOD
+export default HomeHOD;

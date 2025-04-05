@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { account, myAppwrite } from '@/api/appwrite';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { myAppwrite } from '@/api/appwrite';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -9,54 +9,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useEffect, useState } from 'react';
 
 const AuthCheck = () => {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const [departments, setDepartments] = useState<any[]>([]);
+  const { isAuthenticated, userId, department, error, departments, isLoading } = useAuthCheck();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await account.get(); // Get user session
-        setUserId(user.$id);
-        const dept = await myAppwrite.getUserDepartment(user.$id); // Fetch user's department
-
-        if (!dept || !dept.departmentId) {
-          setIsLoadingDepartments(true);
-          const allDepartments = await myAppwrite.getAllDepartments();
-          console.log(allDepartments);
-
-          setDepartments(allDepartments);
-          setIsLoadingDepartments(false);
-          return;
-        }
-
-        console.log('User department:', dept);
-        
-      } catch (error) {
-        setIsLoadingDepartments(false);
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError(String(error));
-        }
+    if (isAuthenticated && department) {
+      if (department === 'iqac') {
+        navigate('/team/iqac');
+      } else {
+        navigate('/team/hod');
       }
-    };
-
-    checkAuth();
-  }, [navigate]);
+    }
+  }, [isAuthenticated, department, navigate]);
 
   const handleDepartmentSelect = async () => {
     if (!selectedDept || !userId) return;
     try {
       await myAppwrite.registerUserDepartment(userId, selectedDept);
-      window.location.reload(); // refresh after successful update
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to update department.');
+      window.location.reload(); // Refresh to trigger recheck
+    } catch (err) {
+      console.error('Failed to update department:', err);
     }
   };
 
@@ -71,44 +47,38 @@ const AuthCheck = () => {
     );
   }
 
-  if (departments.length > 0 || isLoadingDepartments) {
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  }
+
+  if (departments.length > 0 && !department) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <h2 className="text-xl mb-4">Select Your Department</h2>
         <Select
-          value={selectedDept ?? undefined} // Use undefined for no selection
-          onValueChange={setSelectedDept} // shadcn Select uses onValueChange
-          disabled={isLoadingDepartments}
+          value={selectedDept ?? undefined}
+          onValueChange={setSelectedDept}
+          disabled={isLoading}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select department" />
           </SelectTrigger>
           <SelectContent>
-            {isLoadingDepartments ? (
-              <SelectItem value="loading" disabled>
-                Loading...
+            {departments.map((dept) => (
+              <SelectItem key={dept.$id} value={dept.$id}>
+                {dept.name}
               </SelectItem>
-            ) : (
-              departments.map((dept) => (
-                <SelectItem key={dept.$id} value={dept.$id}>
-                  {dept.name}
-                </SelectItem>
-              ))
-            )}
+            ))}
           </SelectContent>
         </Select>
-        <Button
-          onClick={handleDepartmentSelect}
-          className="mt-4"
-          disabled={isLoadingDepartments}
-        >
+        <Button onClick={handleDepartmentSelect} className="mt-4" disabled={isLoading}>
           Save
         </Button>
       </div>
     );
   }
 
-  return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  return null; // Return null if navigating
 };
 
 export default AuthCheck;

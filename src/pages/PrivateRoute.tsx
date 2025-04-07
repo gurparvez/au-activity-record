@@ -3,10 +3,10 @@ import { useAuthCheck } from '@/hooks/useAuthCheck'; // Adjust path as needed
 
 interface PrivateRouteProps {
   element: React.ComponentType;
-  allowedDepartment: string;
+  allowedDepartments: string[];
 }
 
-const PrivateRoute = ({ element: Element, allowedDepartment }: PrivateRouteProps) => {
+const PrivateRoute = ({ element: Element, allowedDepartments }: PrivateRouteProps) => {
   const { isAuthenticated, department, isLoading } = useAuthCheck();
 
   if (isLoading) {
@@ -17,8 +17,8 @@ const PrivateRoute = ({ element: Element, allowedDepartment }: PrivateRouteProps
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedDepartment && department !== allowedDepartment) {
-    return <Navigate to="/" replace />; // Redirect to home if department doesn't match
+  if (!department || allowedDepartments.length > 0 && !allowedDepartments.includes(department)) {
+    return <Navigate to="/" replace />; // Redirect to home if department is not allowed
   }
 
   return <Element />;

@@ -2,6 +2,7 @@ import { AuthCheck, Login, Register, VerifyEmail, UpdateVerification, PrivateRou
 import { Route, Routes } from 'react-router';
 import HodRoutes from './hod.routes';
 import IqacRoutes from './iqac.routes';
+import { DEPARTMENTS } from '@/constants';
 
 const MyRoutes = () => {
   return (
@@ -14,11 +15,11 @@ const MyRoutes = () => {
 
       <Route
         path="/team/hod/*" // Use wildcard to match all sub-routes
-        element={<PrivateRoute element={HodRoutes} allowedDepartment="hod" />}
+        element={<PrivateRoute element={HodRoutes} allowedDepartments={DEPARTMENTS} />}
       />
       <Route
         path="/team/iqac/*"
-        element={<PrivateRoute element={IqacRoutes} allowedDepartment="iqac" />}
+        element={<PrivateRoute element={IqacRoutes} allowedDepartments={['iqac']} />}
       />
     </Routes>
   );

@@ -4,7 +4,7 @@ const HomeHOD = () => {
   return (
     <>
       <Navbar />
-      Home
+      Home HOD
     </>
   );
 };

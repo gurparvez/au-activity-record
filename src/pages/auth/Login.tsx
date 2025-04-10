@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { myAppwrite } from '@/api/appwrite';
 import { useTheme } from '@/components/theme-provider';
 import { NavLink, useNavigate } from 'react-router';
+import { Loader2 } from 'lucide-react';
 
 interface LoginFormInputs {
   email: string;
@@ -14,6 +15,7 @@ interface LoginFormInputs {
 
 const Login = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const { register, handleSubmit } = useForm<LoginFormInputs>();
   const themeContext = useTheme();
@@ -21,6 +23,7 @@ const Login = () => {
 
   const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
     try {
+      setLoading(true);
       setBackendError(null);
       console.log('Login form submitted', data);
       await myAppwrite.loginUser(data.email, data.password);
@@ -31,6 +34,8 @@ const Login = () => {
       } else {
         setBackendError('An unknown error occurred');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,9 +63,16 @@ const Login = () => {
               <p className="text-red-500 text-sm text-center mb-2">{backendError}</p>
             )}
 
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
+            {loading ? (
+              <Button className="w-full bg-gray-600" disabled>
+                Login
+                <Loader2 className="animate-spin" />
+              </Button>
+            ) : (
+              <Button type="submit" className="w-full">
+                Login
+              </Button>
+            )}
           </form>
           <div className="flex flex-row items-center justify-evenly my-3">
             <div

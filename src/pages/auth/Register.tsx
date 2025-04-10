@@ -6,15 +6,19 @@ import { myAppwrite } from '@/api/appwrite';
 import { useTheme } from '@/components/theme-provider';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Loader2 } from 'lucide-react';
 
 const Register = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const { register, handleSubmit } = useForm();
   const themeContext = useTheme();
   const navigate = useNavigate();
 
   const onSubmit = async (data: any) => {
     setBackendError(null);
+    setLoading(true);
     try {
       console.log('Register form submitted', data);
       if (data.password !== data.confirmPassword) {
@@ -23,7 +27,6 @@ const Register = () => {
 
       const response = await myAppwrite.registerUser(data.name, data.email, data.password);
       console.log(response);
-
 
       await myAppwrite.sendUserVerificationEmail();
       navigate('/verify');
@@ -34,6 +37,8 @@ const Register = () => {
       } else {
         setBackendError('An unknown error occurred');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,9 +72,16 @@ const Register = () => {
               {...register('confirmPassword', { required: 'Please confirm your password' })}
               className="w-full"
             />
-            <Button type="submit" className="w-full">
-              Register
-            </Button>
+            {loading ? (
+              <Button className="w-full bg-gray-600" disabled>
+                Register
+                <Loader2 className="animate-spin" />
+              </Button>
+            ) : (
+              <Button type="submit" className="w-full">
+                Register
+              </Button>
+            )}
           </form>
           <div className="flex flex-row items-center justify-evenly my-3">
             <div

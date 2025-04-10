@@ -1,35 +1,7 @@
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { Button } from '@/components/ui/button';
-import { account } from '@/api/appwrite';
-import { useNavigate } from 'react-router';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from '@/components/ui/dialog'; // Importing from shadcn/ui
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import Profile from '@/components/Profile';
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      await account.deleteSession('current');
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div>
       <nav className="shadow-lg dark:shadow-gray-700/50">
@@ -79,49 +51,10 @@ const Navbar = () => {
                 </a>
               </li>
               <li>
-                <a
-                  href="#"
-                  className="block py-2 px-3 text-gray-900 rounded-sm md:border-0 md:hover:bg-card md:p-0 dark:text-white md:hover:text-gray-400 md:dark:hover:text-gray-400 dark:hover:text-white"
-                >
-                  About
-                </a>
-              </li>
-              <li>
                 <ThemeToggle />
               </li>
               <li>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">Logout</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Logout</DialogTitle>
-                      <DialogDescription>Are you sure you want to logout?</DialogDescription>
-                    </DialogHeader>
-                    <div className="flex justify-end space-x-2 mt-4">
-                      <DialogClose asChild>
-                        {loading ? (
-                          <Button variant="outline" disabled className="bg-gray-600">
-                            Cancel
-                          </Button>
-                        ) : (
-                          <Button variant="outline">Cancel</Button>
-                        )}
-                      </DialogClose>
-                      {loading ? (
-                        <Button variant="destructive" disabled className="bg-red-800">
-                          Confirm
-                          <Loader2 className="animate-spin" />
-                        </Button>
-                      ) : (
-                        <Button variant="destructive" onClick={handleLogout}>
-                          Confirm
-                        </Button>
-                      )}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Profile />
               </li>
             </ul>
           </div>

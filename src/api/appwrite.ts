@@ -27,6 +27,28 @@ class MyAppwrite {
     return await account.createVerification(`${ROOT_URL}/update-verification`);
   };
 
+  loginWithGoogle = async () => {
+    await account.createOAuth2Session(
+      OAuthProvider.Google,
+      `${ROOT_URL}/`, // redirect here on success
+      `${ROOT_URL}/`, // redirect here on failure
+      // ['repo', 'user'] // scopes
+    );
+  };
+
+  loginUser = async (email: string, password: string) => {
+    try {
+      const currentSession = await account.getSession('current');
+      if (currentSession) {
+        await account.deleteSession('current');
+      }
+
+      await account.createEmailPasswordSession(email, password);
+    } catch (error) {
+      await account.createEmailPasswordSession(email, password);
+    }
+  };
+
   updateUserEmailVerification = async (userId: string, token: string) => {
     await account.updateVerification(
       userId, // userId
@@ -62,18 +84,14 @@ class MyAppwrite {
     }
   };
 
-  loginUser = async (email: string, password: string) => {
-    try {
-      const currentSession = await account.getSession('current');
-      if (currentSession) {
-        await account.deleteSession('current');
-      }
-
-      await account.createEmailPasswordSession(email, password);
-    } catch (error) {
-      await account.createEmailPasswordSession(email, password);
+  getUserRole = async (userId: string) => {
+    const docs = await db.listDocuments(DB_ID, USER_COLLECTION_ID, [
+      Query.equal('userId', userId),
+    ])
+    if (docs.documents.length > 0) {
+      return docs.documents[0].role; // Return the role of the user
     }
-  };
+  }
 
   getAllDepartments = async () => {
     return (await db.listDocuments(DB_ID, DEPARTMENT_COLLECTION_ID)).documents;
@@ -104,14 +122,14 @@ class MyAppwrite {
     }
   };
 
-  loginWithGoogle = async () => {
-    await account.createOAuth2Session(
-      OAuthProvider.Google,
-      `${ROOT_URL}/`, // redirect here on success
-      `${ROOT_URL}/`, // redirect here on failure
-      // ['repo', 'user'] // scopes
-    );
-  };
+  getUserDepartment = async (userId: string) => {
+    const userDepartmentId = await this.getUserDepartmentId(userId);
+    if (!userDepartmentId) throw new Error("Department not found!");
+
+    const userDepartment = await this.getDepartment(userDepartmentId);
+    if (!userDepartment) throw new Error("User's department not found!")
+    return userDepartment;
+  }
 }
 
 export const myAppwrite = new MyAppwrite();

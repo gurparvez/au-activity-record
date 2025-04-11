@@ -4,7 +4,7 @@ import { account, myAppwrite } from '@/api/appwrite';
 export const useAuthCheck = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [department, setDepartment] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [departments, setDepartments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,16 +16,15 @@ export const useAuthCheck = () => {
         setUserId(user.$id);
         setIsAuthenticated(true);
 
-        const deptId = await myAppwrite.getUserDepartmentId(user.$id);
-        if (!deptId) {
+        const userRole = await myAppwrite.getUserRole(user.$id);
+        if (!userRole) {
           const allDepartments = await myAppwrite.getAllDepartments();
           setDepartments(allDepartments);
           setIsLoading(false);
           return;
         }
 
-        const dept = await myAppwrite.getDepartment(deptId);
-        setDepartment(dept?.name);
+        setRole(userRole);
         setIsLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -37,5 +36,5 @@ export const useAuthCheck = () => {
     checkAuth();
   }, []);
 
-  return { isAuthenticated, userId, department, error, departments, isLoading };
+  return { isAuthenticated, userId, role, error, departments, isLoading };
 };

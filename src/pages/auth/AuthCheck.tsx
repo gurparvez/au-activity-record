@@ -13,18 +13,18 @@ import { useEffect, useState } from 'react';
 
 const AuthCheck = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userId, department, error, departments, isLoading } = useAuthCheck();
+  const { isAuthenticated, userId, role, error, departments, isLoading } = useAuthCheck();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated && department) {
-      if (department === 'iqac') {
-        navigate('/team/iqac');
-      } else {
+    if (isAuthenticated && role) {
+      if (role === 'HOD') {
         navigate('/team/hod');
+      } else if (role === 'IQAC member' || role === 'IQAC HOD') {
+        navigate('/team/iqac');
       }
     }
-  }, [isAuthenticated, department, navigate]);
+  }, [isAuthenticated, role, navigate]);
 
   const handleDepartmentSelect = async () => {
     if (!selectedDept || !userId) return;
@@ -51,7 +51,7 @@ const AuthCheck = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  if (departments.length > 0 && !department) {
+  if (departments.length > 0 && !role) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <h2 className="text-xl mb-4">Select Your Department</h2>

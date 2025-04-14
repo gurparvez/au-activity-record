@@ -1,7 +1,7 @@
 const HomeIQAC = () => {
   return (
     <>
-      HomeIQAC
+      HOME
     </>
   );
 };

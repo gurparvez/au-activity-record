@@ -1,7 +1,9 @@
-import { Card, CardContent } from '@/components/ui/card';
-import Container from '@/components/ui/Container';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import Container from "@/components/ui/Container"
 
-const HomeHOD = () => {
+
+const Activities = () => {
   // Sample data for 20 forms (replace with your actual data)
   const forms = Array.from({ length: 20 }, (_, index) => ({
     title: `Form ${index + 1}`,
@@ -11,10 +13,17 @@ const HomeHOD = () => {
 
   return (
     <>
-      <h1>Forms</h1>
+      <div className="flex justify-between">
+      <h1>Activities</h1>
+      <div className="flex items-center *:mx-2">
+        <Button variant="outline">Select</Button>
+        {/* Add sidebar for adding new activity */}
+        <Button>New</Button>
+      </div>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {forms.map((form, index) => (
-          <Card key={index} className="m-2">
+          <Card key={index} className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
             <CardContent className="p-6">
               <h6 className="text-lg font-semibold">{form.title}</h6>
               <span className="block text-sm text-gray-600">Forms filled: {form.count}</span>
@@ -25,6 +34,6 @@ const HomeHOD = () => {
       </div>
     </>
   );
-};
+}
 
-export default HomeHOD;
+export default Activities

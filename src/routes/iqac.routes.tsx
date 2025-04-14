@@ -1,4 +1,4 @@
-import { HomeIQAC, OutletIqac } from "@/pages"
+import { Activities, HomeIQAC, OutletIqac } from "@/pages/iqac"
 import { Route, Routes } from "react-router"
 
 const IqacRoutes = () => {
@@ -7,7 +7,7 @@ const IqacRoutes = () => {
       <Route element={<OutletIqac />}>
         <Route index element={<HomeIQAC />} />
 
-        
+        <Route path="activities" element={<Activities />} />
       </Route>
     </Routes>
   )

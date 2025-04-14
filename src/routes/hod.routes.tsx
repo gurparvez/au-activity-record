@@ -1,4 +1,4 @@
-import { HomeHOD, OutletHod } from '@/pages';
+import { HomeHOD, OutletHod } from '@/pages/hod';
 import { Route, Routes } from 'react-router';
 
 const HodRoutes = () => {

@@ -1,12 +1,13 @@
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import Profile from '@/components/Profile';
+import { NavLink } from 'react-router';
 
 const Navbar = () => {
   return (
     <div>
       <nav className="shadow-lg dark:shadow-gray-700/50">
         <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-          <a href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
+          <NavLink to="/" className="flex items-center space-x-3 rtl:space-x-reverse">
             <img
               src="https://flowbite.com/docs/images/logo.svg"
               className="h-8"
@@ -15,7 +16,7 @@ const Navbar = () => {
             <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
               AU Activity Record
             </span>
-          </a>
+          </NavLink>
           <button
             data-collapse-toggle="navbar-default"
             type="button"
@@ -43,12 +44,12 @@ const Navbar = () => {
           <div className="hidden w-full md:block md:w-auto" id="navbar-default">
             <ul className="font-medium flex flex-col md:flex-row items-center p-4 md:p-0 mt-4 border border-gray-100 rounded-lg md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0">
               <li>
-                <a
-                  href="/team/hod"
+                <NavLink
+                  to="/team/hod"
                   className="block py-2 px-3 text-gray-900 rounded-sm md:border-0 md:hover:bg-card md:p-0 dark:text-white md:hover:text-gray-400 md:dark:hover:text-gray-400 dark:hover:text-white"
                 >
                   Home
-                </a>
+                </NavLink>
               </li>
               <li>
                 <ThemeToggle />

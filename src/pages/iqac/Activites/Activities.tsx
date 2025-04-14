@@ -1,7 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import Container from "@/components/ui/Container"
-
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import NewActivity from './NewActivity';
 
 const Activities = () => {
   // Sample data for 20 forms (replace with your actual data)
@@ -14,12 +13,12 @@ const Activities = () => {
   return (
     <>
       <div className="flex justify-between">
-      <h1>Activities</h1>
-      <div className="flex items-center *:mx-2">
-        <Button variant="outline">Select</Button>
-        {/* Add sidebar for adding new activity */}
-        <Button>New</Button>
-      </div>
+        <h1>Activities</h1>
+        <div className="flex items-center *:mx-2">
+          <Button variant="outline">Select</Button>
+          {/* TODO: Add sidebar for adding new activity */}
+          <NewActivity />
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {forms.map((form, index) => (
@@ -34,6 +33,6 @@ const Activities = () => {
       </div>
     </>
   );
-}
+};
 
-export default Activities
+export default Activities;

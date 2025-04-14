@@ -130,6 +130,8 @@ class MyAppwrite {
     if (!userDepartment) throw new Error("User's department not found!")
     return userDepartment;
   }
+
+
 }
 
 export const myAppwrite = new MyAppwrite();

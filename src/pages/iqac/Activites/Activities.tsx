@@ -5,6 +5,8 @@ import NewActivity from './NewActivity';
 import { myAppwrite } from '@/api/appwrite';
 import { ActivityDetail } from '@/types';
 
+// TODO: improve loading state
+
 const Activities = () => {
   const [activities, setActivities] = useState<ActivityDetail[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

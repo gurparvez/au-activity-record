@@ -62,6 +62,15 @@ const Navbar = () => {
                 </NavLink>
               </li>
               <li>
+                <NavLink
+                  to="/team/iqac/users"
+                  className="block py-2 px-3 text-foreground rounded-sm md:border-0 md:hover:bg-muted md:p-0 dark:text-foreground md:hover:text-primary md:dark:hover:text-primary dark:hover:text-foreground"
+                  // activeClassName="bg-primary text-primary-foreground md:bg-muted md:text-primary"
+                >
+                  Users
+                </NavLink>
+              </li>
+              <li>
                 <ThemeToggle />
               </li>
               <li>

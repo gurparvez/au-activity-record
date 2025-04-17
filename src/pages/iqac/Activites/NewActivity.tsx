@@ -23,6 +23,8 @@ import { myAppwrite } from '@/api/appwrite';
 import { Trash2 } from 'lucide-react';
 import { sanitizeKey } from '@/utils';
 
+// TODO: add loading on save changes
+
 // Define the type for an attribute
 interface Attribute {
   id: number;

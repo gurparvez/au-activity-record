@@ -16,7 +16,6 @@ const Activities = () => {
         <h1>Activities</h1>
         <div className="flex items-center *:mx-2">
           <Button variant="outline">Select</Button>
-          {/* TODO: Add sidebar for adding new activity */}
           <NewActivity />
         </div>
       </div>

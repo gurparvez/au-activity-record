@@ -1,5 +1,5 @@
 import { ROOT_URL } from '@/constants';
-import { Account, Client, Databases, ID, OAuthProvider, Query } from 'appwrite';
+import { Account, Client, Databases, Functions, ID, OAuthProvider, Query } from 'appwrite';
 
 const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
 const API_URL = import.meta.env.VITE_APPWRITE_API_URL || '';
@@ -12,6 +12,7 @@ client.setEndpoint(API_URL).setProject(PROJECT_ID);
 
 export const db = new Databases(client);
 export const account = new Account(client);
+const functions = new Functions(client);
 
 class MyAppwrite {
   registerUser = async (name: string, email: string, password: string) => {
@@ -85,13 +86,11 @@ class MyAppwrite {
   };
 
   getUserRole = async (userId: string) => {
-    const docs = await db.listDocuments(DB_ID, USER_COLLECTION_ID, [
-      Query.equal('userId', userId),
-    ])
+    const docs = await db.listDocuments(DB_ID, USER_COLLECTION_ID, [Query.equal('userId', userId)]);
     if (docs.documents.length > 0) {
       return docs.documents[0].role; // Return the role of the user
     }
-  }
+  };
 
   getAllDepartments = async () => {
     return (await db.listDocuments(DB_ID, DEPARTMENT_COLLECTION_ID)).documents;
@@ -114,8 +113,8 @@ class MyAppwrite {
 
   getDepartment = async (departmentId: string) => {
     try {
-      const department = await db.getDocument(DB_ID, DEPARTMENT_COLLECTION_ID, departmentId)
-      return department
+      const department = await db.getDocument(DB_ID, DEPARTMENT_COLLECTION_ID, departmentId);
+      return department;
     } catch (error) {
       console.log(error);
       return null;
@@ -124,14 +123,52 @@ class MyAppwrite {
 
   getUserDepartment = async (userId: string) => {
     const userDepartmentId = await this.getUserDepartmentId(userId);
-    if (!userDepartmentId) throw new Error("Department not found!");
+    if (!userDepartmentId) throw new Error('Department not found!');
 
     const userDepartment = await this.getDepartment(userDepartmentId);
-    if (!userDepartment) throw new Error("User's department not found!")
+    if (!userDepartment) throw new Error("User's department not found!");
     return userDepartment;
-  }
+  };
 
+  createNewActivityCollection = async (name: string, attributes: any[]) => {
+    const user = await account.get();
 
+    try {
+      const FUNCTION_ID = import.meta.env.VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID || '';
+      if (!FUNCTION_ID) {
+        throw new Error('VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID is not defined');
+      }
+
+      const payload = {
+        databaseId: DB_ID,
+        collectionName: name,
+        attributes: attributes,
+        isActivity: true,
+        userId: user.$id,
+      };
+
+      const execution = await functions.createExecution(
+        FUNCTION_ID,
+        JSON.stringify(payload), // Payload must be a string
+        false, // Asynchronous execution (set to true if you want async)
+      );
+
+      const response = JSON.parse(execution.responseBody || '{}');
+      if (!response) {
+        throw new Error('Internal Server Error!');
+      }
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      console.log(`Activity collection created: ${response.message}`);
+      return response;
+    } catch (error) {
+      console.error('Error creating activity collection:', error);
+      throw error;
+    }
+  };
 }
 
 export const myAppwrite = new MyAppwrite();

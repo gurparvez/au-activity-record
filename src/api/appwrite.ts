@@ -1,4 +1,5 @@
 import { ROOT_URL } from '@/constants';
+import { ActivityDetail, ActivityDocument } from '@/types';
 import { Account, Client, Databases, Functions, ID, OAuthProvider, Query } from 'appwrite';
 
 const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
@@ -6,6 +7,7 @@ const API_URL = import.meta.env.VITE_APPWRITE_API_URL || '';
 const DB_ID = import.meta.env.VITE_DATABASE_ID || '';
 const USER_COLLECTION_ID = import.meta.env.VITE_USER_COLLECTION_ID || '';
 const DEPARTMENT_COLLECTION_ID = import.meta.env.VITE_DEPARTMENT_COLLECTION_ID || '';
+const ACTIVITIES_COLLECTION_ID = import.meta.env.VITE_ACTIVITIES_COLLECTION_ID || '';
 
 const client = new Client();
 client.setEndpoint(API_URL).setProject(PROJECT_ID);
@@ -167,6 +169,55 @@ class MyAppwrite {
     } catch (error) {
       console.error('Error creating activity collection:', error);
       throw error;
+    }
+  };
+
+  getAllActivities = async (): Promise<ActivityDetail[]> => {
+    try {
+      // Step 1: Fetch all documents from the activities collection
+      const activitiesResponse = await db.listDocuments(DB_ID, ACTIVITIES_COLLECTION_ID);
+      const activities: ActivityDocument[] = activitiesResponse.documents as unknown as ActivityDocument[];
+
+      // Step 2: For each activity, get document count and last updated date
+      const activityDetails = await Promise.all(
+        activities.map(async (activity: ActivityDocument): Promise<ActivityDetail> => {
+          const activityId = activity.activity_id;
+
+          try {
+            // Get total document count in the activity collection
+            const documentsResponse = await db.listDocuments(DB_ID, activityId);
+            const documentCount = documentsResponse.total;
+
+            // Get the most recently updated document (sorted by $updatedAt DESC)
+            const latestDocumentResponse = await db.listDocuments(DB_ID, activityId, [
+              Query.orderDesc('$updatedAt'),
+              Query.limit(1),
+            ]);
+
+            const lastUpdated = latestDocumentResponse.documents.length > 0
+              ? latestDocumentResponse.documents[0].$updatedAt
+              : null;
+
+            return {
+              title: activity.title,
+              count: documentCount,
+              lastFilled: lastUpdated ? new Date(lastUpdated).toISOString().split('T')[0] : 'Never',
+            };
+          } catch (error) {
+            console.error(`Error fetching details for activity ${activityId}:`, error);
+            return {
+              title: activity.title,
+              count: 0,
+              lastFilled: 'Error',
+            };
+          }
+        })
+      );
+
+      return activityDetails;
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      throw new Error('Failed to fetch activities');
     }
   };
 }

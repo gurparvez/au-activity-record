@@ -6,6 +6,7 @@ import { myAppwrite } from '@/api/appwrite';
 import { ActivityDetail } from '@/types';
 import { useDispatch } from 'react-redux';
 import { setActivities } from '@/store/activitiesSlice';
+import { NavLink } from 'react-router';
 
 // TODO: improve loading state
 
@@ -62,13 +63,15 @@ const Activities = () => {
           <div>No activities found.</div>
         ) : (
           acts.map((activity, index) => (
-            <Card key={index} className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
+            <NavLink to={`/team/iqac/activity/${activity.collectionId}`}>
+              <Card key={index} className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
               <CardContent className="p-6">
                 <h6 className="text-lg font-semibold">{activity.title}</h6>
                 <span className="block text-sm text-gray-600">Forms filled: {activity.count}</span>
                 <span className="block text-sm text-gray-600">Last filled: {activity.lastFilled}</span>
               </CardContent>
             </Card>
+            </NavLink>
           ))
         )}
       </div>

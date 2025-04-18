@@ -1,8 +1,6 @@
 import { ROOT_URL } from '@/constants';
-import { setActivities } from '@/store/activitiesSlice';
-import { ActivityDetail, ActivityDocument } from '@/types';
+import { ActivityDetail } from '@/types';
 import { Account, Client, Databases, Functions, ID, OAuthProvider, Query } from 'appwrite';
-import { useDispatch } from 'react-redux';
 
 const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
 const API_URL = import.meta.env.VITE_APPWRITE_API_URL || '';

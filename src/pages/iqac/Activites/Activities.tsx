@@ -7,6 +7,7 @@ import { ActivityDetail } from '@/types';
 import { useDispatch } from 'react-redux';
 import { setActivities } from '@/store/activitiesSlice';
 import { NavLink } from 'react-router';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // TODO: improve loading state
 
@@ -16,38 +17,30 @@ const Activities = () => {
   const [error, setError] = useState<string | null>(null);
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        setLoading(true);
-        const { activityDetails, detailedActivities } = await myAppwrite.getAllActivities();
-        setActs(activityDetails);
-        dispatch(
-          setActivities(
-            detailedActivities.map((activity) => ({
-              collectionId: activity.collectionId,
-              name: activity.name,
-              attributes: activity.attributes,
-            })),
-          ),
-        );
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const { activityDetails, detailedActivities } = await myAppwrite.getAllActivities();
+      setActs(activityDetails);
+      dispatch(
+        setActivities(
+          detailedActivities.map((activity) => ({
+            collectionId: activity.collectionId,
+            name: activity.name,
+            attributes: activity.attributes,
+          })),
+        ),
+      );
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchActivities();
   }, []);
-
-  if (loading) {
-    return <div>Loading activities...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
 
   return (
     <>
@@ -59,8 +52,33 @@ const Activities = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        {acts.length === 0 ? (
-          <div>No activities found.</div>
+        {loading ? (
+          // Skeleton cards for loading state
+          Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index} className="m-2">
+              <CardContent className="p-6 space-y-3">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+          ))
+        ) : error ? (
+          // Error message in place of cards
+          <div className="col-span-full text-center py-8">
+            <p className="text-red-500 text-lg">{error}</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={fetchActivities}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : acts.length === 0 ? (
+          <div className="col-span-full text-center py-8">
+            <p className="text-gray-600">No activities found.</p>
+          </div>
         ) : (
           acts.map((activity, index) => (
             <NavLink to={`/team/iqac/activity/${activity.collectionId}`}>

@@ -12,6 +12,14 @@ export interface ActivityDetail {
   title: string;
   count: number;
   lastFilled: string;
+  collectionId: string;
+  attributes: Array<{
+    key: string;
+    type: string;
+    required: boolean;
+    array: boolean;
+    elements?: string[];
+  }>;
 }
 
 export interface Attribute {

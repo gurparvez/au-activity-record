@@ -42,7 +42,7 @@ const Profile = () => {
     try {
       setUserLoading(true);
       const user = await account.get();
-      console.log('User fetched:', user);
+      // console.log('User fetched:', user);
       setUser(user);
       setNameInput(user.name);
       return user; // Return user to use in getDepartment
@@ -62,8 +62,8 @@ const Profile = () => {
       const userRole = await myAppwrite.getUserRole(userId);
       const userDepartment = await myAppwrite.getUserDepartment(userId);
 
-      console.log('User Role: ', userRole);
-      console.log('Department fetched:', userDepartment);
+      // console.log('User Role: ', userRole);
+      // console.log('Department fetched:', userDepartment);
 
       setRole(userRole);
       setUserDepartment(userDepartment);

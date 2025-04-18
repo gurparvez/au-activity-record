@@ -1,6 +1,8 @@
 import { ROOT_URL } from '@/constants';
+import { setActivities } from '@/store/activitiesSlice';
 import { ActivityDetail, ActivityDocument } from '@/types';
 import { Account, Client, Databases, Functions, ID, OAuthProvider, Query } from 'appwrite';
+import { useDispatch } from 'react-redux';
 
 const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
 const API_URL = import.meta.env.VITE_APPWRITE_API_URL || '';
@@ -172,16 +174,85 @@ class MyAppwrite {
     }
   };
 
-  getAllActivities = async (): Promise<ActivityDetail[]> => {
+  getAllActivities = async (): Promise<{
+    activityDetails: ActivityDetail[];
+    detailedActivities: Array<{
+      collectionId: string;
+      name: string;
+      attributes: Array<{
+        key: string;
+        type: string;
+        required: boolean;
+        array: boolean;
+        elements?: string[];
+      }>;
+    }>;
+  }> => {
+    // const dispatch = useDispatch();
+
     try {
+      const FUNCTION_ID = import.meta.env.VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID || '';
+      if (!FUNCTION_ID) {
+        throw new Error('VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID is not defined');
+      }
+
+      if (!DB_ID || !ACTIVITIES_COLLECTION_ID) {
+        throw new Error('Database ID or Activities Collection ID is not defined');
+      }
+
+      const payload = {
+        databaseId: DB_ID,
+        isGet: true,
+      };
+
+      const execution = await functions.createExecution(
+        FUNCTION_ID,
+        JSON.stringify(payload), // Payload must be a string
+        false, // Synchronous execution
+      );
+
+      const response = JSON.parse(execution.responseBody || '{}');
+      if (!response) {
+        throw new Error('Internal Server Error!');
+      }
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      // Extract activities with attributes from the cloud function response
+      const detailedActivities: Array<{
+        collectionId: string;
+        name: string;
+        attributes: Array<{
+          key: string;
+          type: string;
+          required: boolean;
+          array: boolean;
+          elements?: string[];
+        }>;
+      }> = response.activities || [];
+      // dispatch(setActivities(detailedActivities));
+      // console.log(`detailed Activities: ${detailedActivities}`);
+      console.log(detailedActivities)
+
       // Step 1: Fetch all documents from the activities collection
       const activitiesResponse = await db.listDocuments(DB_ID, ACTIVITIES_COLLECTION_ID);
-      const activities: ActivityDocument[] = activitiesResponse.documents as unknown as ActivityDocument[];
+      const activities: Array<{
+        $id: string;
+        activity_id: string;
+        title: string;
+        user_id: string;
+        [key: string]: any;
+      }> = activitiesResponse.documents as any;
 
-      // Step 2: For each activity, get document count and last updated date
+      // Step 2: For each activity, get document count, last updated date, and merge with detailed data
       const activityDetails = await Promise.all(
-        activities.map(async (activity: ActivityDocument): Promise<ActivityDetail> => {
+        activities.map(async (activity): Promise<ActivityDetail> => {
           const activityId = activity.activity_id;
+
+          // Find the corresponding detailed activity data
+          const detailedActivity = detailedActivities.find((da) => da.collectionId === activityId);
 
           try {
             // Get total document count in the activity collection
@@ -194,30 +265,76 @@ class MyAppwrite {
               Query.limit(1),
             ]);
 
-            const lastUpdated = latestDocumentResponse.documents.length > 0
-              ? latestDocumentResponse.documents[0].$updatedAt
-              : null;
+            const lastUpdated =
+              latestDocumentResponse.documents.length > 0
+                ? latestDocumentResponse.documents[0].$updatedAt
+                : null;
 
             return {
+              collectionId: activityId,
               title: activity.title,
               count: documentCount,
               lastFilled: lastUpdated ? new Date(lastUpdated).toISOString().split('T')[0] : 'Never',
+              attributes: detailedActivity ? detailedActivity.attributes : [],
             };
           } catch (error) {
             console.error(`Error fetching details for activity ${activityId}:`, error);
             return {
+              collectionId: activityId,
               title: activity.title,
               count: 0,
               lastFilled: 'Error',
+              attributes: detailedActivity ? detailedActivity.attributes : [],
             };
           }
-        })
+        }),
       );
 
-      return activityDetails;
+      return { activityDetails, detailedActivities };
     } catch (error) {
       console.error('Error fetching activities:', error);
       throw new Error('Failed to fetch activities');
+    }
+  };
+
+  updateActivityCollection = async (collectionId: string, name: string, attributes: any[]) => {
+    const user = await account.get();
+
+    try {
+      const FUNCTION_ID = import.meta.env.VITE_APPWRITE_UPDATE_COLLECTION_FUNCTION_ID || '';
+      if (!FUNCTION_ID) {
+        throw new Error('VITE_APPWRITE_UPDATE_COLLECTION_FUNCTION_ID is not defined');
+      }
+
+      const payload = {
+        collectionId: collectionId,
+        databaseId: DB_ID,
+        collectionName: name,
+        attributes: attributes,
+        isActivity: true,
+        userId: user.$id,
+      };
+
+      const execution = await functions.createExecution(
+        FUNCTION_ID,
+        JSON.stringify(payload), // Payload must be a string
+        false, // Asynchronous execution (set to true if you want async)
+      );
+
+      const response = JSON.parse(execution.responseBody || '{}');
+      if (!response) {
+        throw new Error('Internal Server Error!');
+      }
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      console.log(`Activity collection created: ${response.message}`);
+      return response;
+    } catch (error) {
+      console.error('Error creating activity collection:', error);
+      throw error;
     }
   };
 }

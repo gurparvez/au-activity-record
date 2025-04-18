@@ -4,20 +4,32 @@ import { Card, CardContent } from '@/components/ui/card';
 import NewActivity from './NewActivity';
 import { myAppwrite } from '@/api/appwrite';
 import { ActivityDetail } from '@/types';
+import { useDispatch } from 'react-redux';
+import { setActivities } from '@/store/activitiesSlice';
 
 // TODO: improve loading state
 
 const Activities = () => {
-  const [activities, setActivities] = useState<ActivityDetail[]>([]);
+  const [acts, setActs] = useState<ActivityDetail[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        const activityData = await myAppwrite.getAllActivities();
-        setActivities(activityData);
+        const { activityDetails, detailedActivities } = await myAppwrite.getAllActivities();
+        setActs(activityDetails);
+        dispatch(
+          setActivities(
+            detailedActivities.map((activity) => ({
+              collectionId: activity.collectionId,
+              name: activity.name,
+              attributes: activity.attributes,
+            })),
+          ),
+        );
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -46,10 +58,10 @@ const Activities = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        {activities.length === 0 ? (
+        {acts.length === 0 ? (
           <div>No activities found.</div>
         ) : (
-          activities.map((activity, index) => (
+          acts.map((activity, index) => (
             <Card key={index} className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
               <CardContent className="p-6">
                 <h6 className="text-lg font-semibold">{activity.title}</h6>

@@ -1,4 +1,4 @@
-import { HomeHOD, OutletHod } from '@/pages/hod';
+import { Activity, HomeHOD, OutletHod } from '@/pages/hod';
 import { Route, Routes } from 'react-router';
 
 const HodRoutes = () => {
@@ -7,8 +7,7 @@ const HodRoutes = () => {
       <Route element={<OutletHod />}>
         <Route index element={<HomeHOD />} />
 
-        <Route path="dashboard" element={<div>HOD Dashboard</div>} />
-        <Route path="settings" element={<div>HOD Settings</div>} />
+        <Route path="activity/:id" element={<Activity />} />
       </Route>
     </Routes>
   );

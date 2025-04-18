@@ -23,8 +23,6 @@ import { myAppwrite } from '@/api/appwrite';
 import { Trash2 } from 'lucide-react';
 import { sanitizeKey } from '@/utils';
 
-// TODO: add loading on save changes
-
 // Define the type for an attribute
 interface Attribute {
   id: number;
@@ -33,9 +31,17 @@ interface Attribute {
   isRequired: boolean;
 }
 
-const NewActivity = () => {
+// Define props interface
+interface NewActivityProps {
+  onActivityCreated?: () => void;
+}
+
+const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
   const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [activityName, setActivityName] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState<boolean>(false);
 
   // Appwrite-compatible attribute types
   const attributeTypes: string[] = [
@@ -88,9 +94,13 @@ const NewActivity = () => {
   const clearAll = () => {
     setAttributes([]);
     setActivityName('');
+    setError(null);
   };
 
   const onSubmit = async () => {
+    setLoading(true);
+    setError(null);
+
     const formattedAttributes = attributes.map(attr => ({
       key: sanitizeKey(attr.attributeName),
       type: attr.attributeType,
@@ -104,17 +114,24 @@ const NewActivity = () => {
 
     try {
       await myAppwrite.createNewActivityCollection(activityName, formattedAttributes);
-    } catch (e) {
-      console.error('Error:', e);
+      setLoading(false);
+      setOpen(false); // Close the modal on success
+      if (onActivityCreated) {
+        onActivityCreated(); // Trigger parent re-render
+      }
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'An error occurred while saving the activity.';
+      setError(errorMessage);
+      setLoading(false);
     }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>New</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Activity</DialogTitle>
           <DialogDescription>
@@ -191,11 +208,40 @@ const NewActivity = () => {
             Add Attribute
           </Button>
         </div>
+        {error && (
+          <div className="text-red-500 text-sm" role="alert">
+            {error}
+          </div>
+        )}
         <DialogFooter>
-          <Button variant="outline" onClick={clearAll}>
+          <Button variant="outline" onClick={clearAll} disabled={loading}>
             Clear All
           </Button>
-          <Button onClick={onSubmit}>Save changes</Button>
+          <Button onClick={onSubmit} disabled={loading}>
+            Save changes
+            {loading && (
+              <svg
+                className="animate-spin ml-2 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

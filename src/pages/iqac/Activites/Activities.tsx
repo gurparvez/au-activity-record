@@ -9,8 +9,6 @@ import { setActivities } from '@/store/activitiesSlice';
 import { NavLink } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// TODO: improve loading state
-
 const Activities = () => {
   const [acts, setActs] = useState<ActivityDetail[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -48,7 +46,7 @@ const Activities = () => {
         <h1>Activities</h1>
         <div className="flex items-center *:mx-2">
           <Button variant="outline">Select</Button>
-          <NewActivity />
+          <NewActivity onActivityCreated={fetchActivities} />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -83,12 +81,12 @@ const Activities = () => {
           acts.map((activity, index) => (
             <NavLink to={`/team/iqac/activity/${activity.collectionId}`}>
               <Card key={index} className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
-              <CardContent className="p-6">
-                <h6 className="text-lg font-semibold">{activity.title}</h6>
-                <span className="block text-sm text-gray-600">Forms filled: {activity.count}</span>
-                <span className="block text-sm text-gray-600">Last filled: {activity.lastFilled}</span>
-              </CardContent>
-            </Card>
+                <CardContent className="p-6">
+                  <h6 className="text-lg font-semibold">{activity.title}</h6>
+                  <span className="block text-sm text-gray-600">Forms filled: {activity.count}</span>
+                  <span className="block text-sm text-gray-600">Last filled: {activity.lastFilled}</span>
+                </CardContent>
+              </Card>
             </NavLink>
           ))
         )}

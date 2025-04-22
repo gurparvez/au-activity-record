@@ -69,8 +69,8 @@ const HomeHOD = () => {
           </div>
         ) : (
           acts.map((activity, index) => (
-            <NavLink to={`/team/hod/activity/${activity.collectionId}`}>
-              <Card key={index} className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
+            <NavLink key={index} to={`/team/hod/activity/${activity.collectionId}`}>
+              <Card className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
                 <CardContent className="p-6">
                   <h6 className="text-lg font-semibold">{activity.title}</h6>
                   <span className="block text-sm text-gray-600">

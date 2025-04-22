@@ -27,6 +27,7 @@ const activitiesSlice = createSlice({
   initialState,
   reducers: {
     setActivities(state, action: PayloadAction<Activity[]>) {
+      console.log(action.payload);
       state.activities = action.payload;
     },
   },

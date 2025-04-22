@@ -40,9 +40,12 @@ const AuthCheck = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-red-500">{error}</p>
-        <Button onClick={() => navigate('/login')} className="mt-4">
-          Go to Login
-        </Button>
+        <div className="flex mt-4 gap-4">
+          <Button variant="outline" onClick={() => navigate('/login')}>
+            Go to Login
+          </Button>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
       </div>
     );
   }

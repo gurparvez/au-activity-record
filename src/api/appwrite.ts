@@ -2,24 +2,29 @@ import { ROOT_URL } from '@/constants';
 import { ActivityDetail } from '@/types';
 import { Account, Client, Databases, Functions, ID, OAuthProvider, Query } from 'appwrite';
 
-const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
-const API_URL = import.meta.env.VITE_APPWRITE_API_URL || '';
-const DB_ID = import.meta.env.VITE_DATABASE_ID || '';
-const USER_COLLECTION_ID = import.meta.env.VITE_USER_COLLECTION_ID || '';
-const DEPARTMENT_COLLECTION_ID = import.meta.env.VITE_DEPARTMENT_COLLECTION_ID || '';
-const ACTIVITIES_COLLECTION_ID = import.meta.env.VITE_ACTIVITIES_COLLECTION_ID || '';
-
 const client = new Client();
-client.setEndpoint(API_URL).setProject(PROJECT_ID);
+client.setEndpoint(import.meta.env.VITE_APPWRITE_API_URL || '').setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '');
 
 export const db = new Databases(client);
 export const account = new Account(client);
 const functions = new Functions(client);
 
 class MyAppwrite {
+  private readonly DB_ID: string;
+  private readonly USER_COLLECTION_ID: string;
+  private readonly DEPARTMENT_COLLECTION_ID: string;
+  private readonly ACTIVITIES_COLLECTION_ID: string;
+
+  constructor() {
+    this.DB_ID = import.meta.env.VITE_DATABASE_ID || '';
+    this.USER_COLLECTION_ID = import.meta.env.VITE_USER_COLLECTION_ID || '';
+    this.DEPARTMENT_COLLECTION_ID = import.meta.env.VITE_DEPARTMENT_COLLECTION_ID || '';
+    this.ACTIVITIES_COLLECTION_ID = import.meta.env.VITE_ACTIVITIES_COLLECTION_ID || '';
+  }
+
   registerUser = async (name: string, email: string, password: string) => {
     const user = await account.create(ID.unique(), email, password, name);
-    await db.createDocument(DB_ID, USER_COLLECTION_ID, ID.unique(), {
+    await db.createDocument(this.DB_ID, this.USER_COLLECTION_ID, ID.unique(), {
       userId: user.$id,
       departmentId: '',
     });
@@ -61,21 +66,21 @@ class MyAppwrite {
 
   registerUserDepartment = async (userId: string, departmentId: string) => {
     try {
-      const userDepartment = await db.listDocuments(DB_ID, USER_COLLECTION_ID, [
+      const userDepartment = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [
         Query.equal('userId', userId),
       ]);
 
       // If a document exists, update it
       if (userDepartment.documents.length > 0) {
         const documentId = userDepartment.documents[0].$id;
-        await db.updateDocument('[DB_ID]', '[USER_COLLECTION_ID]', documentId, {
+        await db.updateDocument(this.DB_ID, this.USER_COLLECTION_ID, documentId, {
           departmentId: departmentId,
         });
         console.log(`Updated department for user ${userId}`);
       }
       // If no document exists, create a new one
       else {
-        await db.createDocument(DB_ID, USER_COLLECTION_ID, ID.unique(), {
+        await db.createDocument(this.DB_ID, this.USER_COLLECTION_ID, ID.unique(), {
           userId: userId,
           departmentId: departmentId,
         });
@@ -88,19 +93,19 @@ class MyAppwrite {
   };
 
   getUserRole = async (userId: string) => {
-    const docs = await db.listDocuments(DB_ID, USER_COLLECTION_ID, [Query.equal('userId', userId)]);
+    const docs = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [Query.equal('userId', userId)]);
     if (docs.documents.length > 0) {
       return docs.documents[0].role; // Return the role of the user
     }
   };
 
   getAllDepartments = async () => {
-    return (await db.listDocuments(DB_ID, DEPARTMENT_COLLECTION_ID)).documents;
+    return (await db.listDocuments(this.DB_ID, this.DEPARTMENT_COLLECTION_ID)).documents;
   };
 
   getUserDepartmentId = async (userId: string) => {
     try {
-      const departments = await db.listDocuments(DB_ID, USER_COLLECTION_ID, [
+      const departments = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [
         Query.equal('userId', userId),
       ]);
       if (departments.documents.length > 0) {
@@ -115,7 +120,7 @@ class MyAppwrite {
 
   getDepartment = async (departmentId: string) => {
     try {
-      const department = await db.getDocument(DB_ID, DEPARTMENT_COLLECTION_ID, departmentId);
+      const department = await db.getDocument(this.DB_ID, this.DEPARTMENT_COLLECTION_ID, departmentId);
       return department;
     } catch (error) {
       console.log(error);
@@ -142,7 +147,7 @@ class MyAppwrite {
       }
 
       const payload = {
-        databaseId: DB_ID,
+        databaseId: this.DB_ID,
         collectionName: name,
         attributes: attributes,
         isActivity: true,
@@ -186,20 +191,18 @@ class MyAppwrite {
       }>;
     }>;
   }> => {
-    // const dispatch = useDispatch();
-
     try {
       const FUNCTION_ID = import.meta.env.VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID || '';
       if (!FUNCTION_ID) {
         throw new Error('VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID is not defined');
       }
 
-      if (!DB_ID || !ACTIVITIES_COLLECTION_ID) {
+      if (!this.DB_ID || !this.ACTIVITIES_COLLECTION_ID) {
         throw new Error('Database ID or Activities Collection ID is not defined');
       }
 
       const payload = {
-        databaseId: DB_ID,
+        databaseId: this.DB_ID,
         isGet: true,
       };
 
@@ -230,12 +233,11 @@ class MyAppwrite {
           elements?: string[];
         }>;
       }> = response.activities || [];
-      // dispatch(setActivities(detailedActivities));
-      // console.log(`detailed Activities: ${detailedActivities}`);
-      console.log(detailedActivities)
+
+      console.log(detailedActivities);
 
       // Step 1: Fetch all documents from the activities collection
-      const activitiesResponse = await db.listDocuments(DB_ID, ACTIVITIES_COLLECTION_ID);
+      const activitiesResponse = await db.listDocuments(this.DB_ID, this.ACTIVITIES_COLLECTION_ID);
       const activities: Array<{
         $id: string;
         activity_id: string;
@@ -254,11 +256,11 @@ class MyAppwrite {
 
           try {
             // Get total document count in the activity collection
-            const documentsResponse = await db.listDocuments(DB_ID, activityId);
+            const documentsResponse = await db.listDocuments(this.DB_ID, activityId);
             const documentCount = documentsResponse.total;
 
             // Get the most recently updated document (sorted by $updatedAt DESC)
-            const latestDocumentResponse = await db.listDocuments(DB_ID, activityId, [
+            const latestDocumentResponse = await db.listDocuments(this.DB_ID, activityId, [
               Query.orderDesc('$updatedAt'),
               Query.limit(1),
             ]);
@@ -306,7 +308,7 @@ class MyAppwrite {
 
       const payload = {
         collectionId: collectionId,
-        databaseId: DB_ID,
+        databaseId: this.DB_ID,
         collectionName: name,
         attributes: attributes,
         isActivity: true,
@@ -335,6 +337,19 @@ class MyAppwrite {
       throw error;
     }
   };
+
+  getDocumentsOfActivity = async (collectionId: string) => {
+    try {
+      const response = await db.listDocuments(this.DB_ID, collectionId);
+      if (!response) {
+        throw new Error("Internal Server Error!");
+      }
+      return response.documents;
+    } catch (error) {
+      console.log("Error getting documents of activity: ", error);
+      throw error;
+    }
+  }
 }
 
 export const myAppwrite = new MyAppwrite();

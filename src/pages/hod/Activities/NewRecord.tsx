@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router';
 import { RootState } from '@/store';
-import { myAppwrite } from '@/api/appwrite';
+import { account, myAppwrite } from '@/api/appwrite';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,16 +44,33 @@ const NewRecord = () => {
     state.activities.activities.find((act) => act.collectionId === id)
   );
 
-  console.log(activity);
+  // State for current user ID
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // Initialize form data
-  const initialFormData: FormData = activity?.attributes.reduce((acc, attr) => ({
-    ...acc,
-    [attr.key]: attr.array ? [''] : ''
-  }), {}) || {};
+  // Initialize form data, excluding user attribute
+  const initialFormData: FormData = activity?.attributes
+    .filter(attr => attr.key !== 'user')
+    .reduce((acc, attr) => ({
+      ...acc,
+      [attr.key]: attr.array ? [''] : ''
+    }), {}) || {};
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [loading, setLoading] = useState(false);
+
+  // Fetch current user ID on component mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await account.get();
+        setCurrentUserId(user.$id);
+      } catch (error) {
+        console.error('Failed to fetch current user:', error);
+        toast.error('Failed to fetch user information');
+      }
+    };
+    fetchUser();
+  }, []);
 
   if (!activity || !id) {
     return <div>Activity not found</div>;
@@ -188,7 +205,7 @@ const NewRecord = () => {
 
     try {
       // Prepare data for submission
-      const data = Object.keys(formData).reduce((acc, key) => {
+      const data: { [key: string]: any } = Object.keys(formData).reduce((acc, key) => {
         const attr = activity.attributes.find((a) => a.key === key);
         if (!attr) return acc;
 
@@ -220,7 +237,7 @@ const NewRecord = () => {
                 }
               });
             } else if (!attr.elements?.includes(value)) {
-              throw new Error(`Invalid enum value "${value}" for ${formatAttributeKey(key)}`);
+              throw new Error(`Invalid enum value "${value}" for contempo ${formatAttributeKey(key)}`);
             }
             break;
           case 'datetime':
@@ -237,6 +254,15 @@ const NewRecord = () => {
 
         return { ...acc, [key]: value };
       }, {});
+
+      // Add user ID if user attribute exists
+      const hasUserAttribute = activity.attributes.some(attr => attr.key === 'user');
+      if (hasUserAttribute) {
+        if (!currentUserId) {
+          throw new Error('User ID not available');
+        }
+        data.user = currentUserId;
+      }
 
       // Submit to Appwrite
       await myAppwrite.createDocument(id, data);
@@ -257,41 +283,43 @@ const NewRecord = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {activity.attributes.map((attr) => (
-              <div key={attr.key} className="space-y-2">
-                <Label htmlFor={attr.key}>
-                  {formatAttributeKey(attr.key)} {attr.required && <span className="text-red-500">*</span>}
-                </Label>
-                {attr.array ? (
-                  <div className="space-y-2">
-                    {(formData[attr.key] || []).map((value: string, index: number) => (
-                      <div key={`${attr.key}-${index}`} className="flex items-center space-x-2">
-                        {getInputComponent(attr, value, index)}
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleRemoveArrayItem(attr.key, index)}
-                          disabled={formData[attr.key].length === 1}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddArrayItem(attr.key)}
-                    >
-                      Add {formatAttributeKey(attr.key)}
-                    </Button>
-                  </div>
-                ) : (
-                  getInputComponent(attr, formData[attr.key] || '')
-                )}
-              </div>
-            ))}
+            {activity.attributes
+              .filter(attr => attr.key !== 'user') // Hide user attribute
+              .map((attr) => (
+                <div key={attr.key} className="space-y-2">
+                  <Label htmlFor={attr.key}>
+                    {formatAttributeKey(attr.key)} {attr.required && <span className="text-red-500">*</span>}
+                  </Label>
+                  {attr.array ? (
+                    <div className="space-y-2">
+                      {(formData[attr.key] || []).map((value: string, index: number) => (
+                        <div key={`${attr.key}-${index}`} className="flex items-center space-x-2">
+                          {getInputComponent(attr, value, index)}
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveArrayItem(attr.key, index)}
+                            disabled={formData[attr.key].length === 1}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddArrayItem(attr.key)}
+                      >
+                        Add {formatAttributeKey(attr.key)}
+                      </Button>
+                    </div>
+                  ) : (
+                    getInputComponent(attr, formData[attr.key] || '')
+                  )}
+                </div>
+              ))}
             <div className="flex justify-end space-x-2">
               <Button
                 type="button"

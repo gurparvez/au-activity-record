@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +44,7 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<boolean>(false);
+  const [whoFilled, setWhoFilled] = useState<boolean>(true); // New state for Who filled checkbox
 
   // Appwrite-compatible attribute types
   const attributeTypes: string[] = [
@@ -68,6 +69,28 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
       return false;
     }
   };
+
+  // Effect to handle user attribute based on whoFilled checkbox
+  useEffect(() => {
+    if (whoFilled) {
+      // Add user attribute if not already present
+      if (!attributes.some(attr => attr.attributeName === 'user')) {
+        setAttributes(prev => [
+          ...prev,
+          {
+            id: Date.now(),
+            attributeName: 'user',
+            attributeType: 'string',
+            isRequired: true,
+            isArray: false,
+          }
+        ]);
+      }
+    } else {
+      // Remove user attribute if present
+      setAttributes(prev => prev.filter(attr => attr.attributeName !== 'user'));
+    }
+  }, [whoFilled]);
 
   // Function to add new attribute
   const addAttribute = () => {
@@ -109,15 +132,6 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
     setAttributes(
       attributes.map((attr) =>
         attr.id === id ? { ...attr, isRequired: checked } : attr
-      )
-    );
-  };
-
-  // Function to update array status
-  const updateArrayStatus = (id: number, checked: boolean) => {
-    setAttributes(
-      attributes.map((attr) =>
-        attr.id === id ? { ...attr, isArray: checked } : attr
       )
     );
   };
@@ -173,6 +187,7 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
     setAttributes([]);
     setActivityName('');
     setError(null);
+    setWhoFilled(true); // Reset whoFilled to default
   };
 
   // Validate and submit the form
@@ -268,6 +283,14 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
               placeholder="Enter activity name"
             />
           </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="who-filled"
+              checked={whoFilled}
+              onCheckedChange={(checked: boolean) => setWhoFilled(checked)}
+            />
+            <Label htmlFor="who-filled">Who filled (adds user attribute)</Label>
+          </div>
           {attributes.map((attribute) => (
             <div key={attribute.id} className="space-y-4 border p-4 rounded-md">
               <div className="grid grid-cols-12 gap-2 items-center">
@@ -286,6 +309,7 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
                     placeholder="Enter attribute name"
                     aria-invalid={!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== ''}
                     aria-describedby={`name-error-${attribute.id}`}
+                    disabled={attribute.attributeName === 'user'} // Disable editing for user attribute
                   />
                   {!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== '' && (
                     <p id={`name-error-${attribute.id}`} className="text-red-500 text-sm">
@@ -298,6 +322,7 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
                   <Select
                     onValueChange={(value: string) => updateAttributeType(attribute.id, value)}
                     value={attribute.attributeType}
+                    disabled={attribute.attributeName === 'user'} // Disable type selection for user attribute
                   >
                     <SelectTrigger id={`type-${attribute.id}`}>
                       <SelectValue placeholder="Select type" />
@@ -318,6 +343,7 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
                     onCheckedChange={(checked: boolean) =>
                       updateRequiredStatus(attribute.id, checked)
                     }
+                    disabled={attribute.attributeName === 'user'} // Disable required checkbox for user attribute
                   />
                   <Label htmlFor={`required-${attribute.id}`}>Required</Label>
                 </div>
@@ -326,18 +352,11 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
                     variant="destructive"
                     size="icon"
                     onClick={() => deleteAttribute(attribute.id)}
+                    disabled={attribute.attributeName === 'user'} // Disable delete for user attribute
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                {/* <Checkbox
-                  id={`array-${attribute.id}`}
-                  checked={attribute.isArray}
-                  onCheckedChange={(checked: boolean) => updateArrayStatus(attribute.id, checked)}
-                />
-                <Label htmlFor={`array-${attribute.id}`}>Array</Label> */}
               </div>
               {attribute.attributeType === 'enum' && (
                 <div className="space-y-2">

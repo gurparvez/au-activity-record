@@ -3,6 +3,7 @@ import OutletIqac from "./OutletIqac";
 import Activities from "./Activites/Activities";
 import Users from "./Users/Users";
 import ShowActivity from "./Activites/ShowActivity";
+import Activity from "./Activites/Activity";
 
 export {
   HomeIQAC,
@@ -10,4 +11,5 @@ export {
   Activities,
   ShowActivity,
   Users,
+  Activity,
 }

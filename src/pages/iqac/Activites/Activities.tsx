@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import NewActivity from './NewActivity';
 import { myAppwrite } from '@/api/appwrite';
 import { ActivityDetail } from '@/types';
@@ -8,11 +16,15 @@ import { useDispatch } from 'react-redux';
 import { setActivities } from '@/store/activitiesSlice';
 import { NavLink } from 'react-router';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 const Activities = () => {
   const [acts, setActs] = useState<ActivityDetail[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
   const dispatch = useDispatch();
 
   const fetchActivities = async () => {
@@ -36,6 +48,30 @@ const Activities = () => {
     }
   };
 
+  const handleDelete = async (collectionId: string) => {
+    try {
+      setDeleteLoading(true);
+      await myAppwrite.deleteActivity(collectionId);
+      await fetchActivities();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setDeleteLoading(false);
+      setIsModalOpen(false);
+      setActivityToDelete(null);
+    }
+  };
+
+  const openDeleteModal = (collectionId: string) => {
+    setActivityToDelete(collectionId);
+    setIsModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsModalOpen(false);
+    setActivityToDelete(null);
+  };
+
   useEffect(() => {
     fetchActivities();
   }, []);
@@ -51,7 +87,6 @@ const Activities = () => {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {loading ? (
-          // Skeleton cards for loading state
           Array.from({ length: 4 }).map((_, index) => (
             <Card key={index} className="m-2">
               <CardContent className="p-6 space-y-3">
@@ -62,14 +97,9 @@ const Activities = () => {
             </Card>
           ))
         ) : error ? (
-          // Error message in place of cards
           <div className="col-span-full text-center py-8">
             <p className="text-red-500 text-lg">{error}</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={fetchActivities}
-            >
+            <Button variant="outline" className="mt-4" onClick={fetchActivities}>
               Retry
             </Button>
           </div>
@@ -80,17 +110,65 @@ const Activities = () => {
         ) : (
           acts.map((activity, index) => (
             <NavLink key={index} to={`/team/iqac/activity/${activity.collectionId}`}>
-              <Card className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
-                <CardContent className="p-6">
+              <Card className="m-2 hover:cursor-default hover:scale-105 transition-all">
+                <CardContent className="p-6 relative">
                   <h6 className="text-lg font-semibold">{activity.title}</h6>
-                  <span className="block text-sm text-gray-600">Forms filled: {activity.count}</span>
-                  <span className="block text-sm text-gray-600">Last filled: {activity.lastFilled}</span>
+                  <span className="block text-sm text-gray-600">
+                    Forms filled: {activity.count}
+                  </span>
+                  <span className="block text-sm text-gray-600">
+                    Last filled: {activity.lastFilled}
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute bottom-2 right-5"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openDeleteModal(activity.collectionId);
+                    }}
+                  >
+                    Delete
+                  </Button>
                 </CardContent>
               </Card>
             </NavLink>
           ))
         )}
       </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Confirm Deletion !</DialogTitle>
+            <DialogDescription>
+              This action will permanently delete the activity and all associated data. Are you sure
+              you want to proceed?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDeleteModal}>
+              Cancel
+            </Button>
+            {deleteLoading ? (
+              <Button
+                variant="destructive"
+                disabled={true}
+              >
+                Delete
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                onClick={() => activityToDelete && handleDelete(activityToDelete)}
+              >
+                Delete
+                <Loader2 className="animate-spin" />
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

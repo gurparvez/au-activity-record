@@ -371,6 +371,44 @@ class MyAppwrite {
       throw error;
     }
   };
+
+  deleteActivity = async (collectionId: string) => {
+    try {
+      const FUNCTION_ID = import.meta.env.VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID || '';
+      if (!FUNCTION_ID) {
+        throw new Error('VITE_APPWRITE_CREATE_COLLECTION_FUNCTION_ID is not defined');
+      }
+
+      if (!this.DB_ID || !this.ACTIVITIES_COLLECTION_ID) {
+        throw new Error('Database ID or Activities Collection ID is not defined');
+      }
+
+      const payload = {
+        databaseId: this.DB_ID,
+        collectionId: collectionId,
+        isActivity: true,
+        isDelete: true,
+      };
+
+      const execution = await functions.createExecution(
+        FUNCTION_ID,
+        JSON.stringify(payload), // Payload must be a string
+        false, // Synchronous execution
+      );
+
+      const response = JSON.parse(execution.responseBody || '{}');
+      if (!response) {
+        throw new Error('Internal Server Error!');
+      }
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      throw new Error('Failed to delete activity');
+    }
+  };
 }
 
 export const myAppwrite = new MyAppwrite();

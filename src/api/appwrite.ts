@@ -1,9 +1,11 @@
 import { ROOT_URL } from '@/constants';
 import { ActivityDetail } from '@/types';
-import { Account, Client, Databases, Functions, ID, OAuthProvider, Query } from 'appwrite';
+import { Account, Client, Databases, Functions, ID, Models, OAuthProvider, Query } from 'appwrite';
 
 const client = new Client();
-client.setEndpoint(import.meta.env.VITE_APPWRITE_API_URL || '').setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '');
+client
+  .setEndpoint(import.meta.env.VITE_APPWRITE_API_URL || '')
+  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID || '');
 
 export const db = new Databases(client);
 export const account = new Account(client);
@@ -92,8 +94,23 @@ class MyAppwrite {
     }
   };
 
+  createDocument = async (
+    collectionId: string,
+    data: Record<string, any>,
+  ): Promise<Models.Document> => {
+    try {
+      const document = await db.createDocument(this.DB_ID, collectionId, ID.unique(), data);
+      return document;
+    } catch (error: any) {
+      console.error('Error creating document:', error);
+      throw new Error(`Failed to create document: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   getUserRole = async (userId: string) => {
-    const docs = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [Query.equal('userId', userId)]);
+    const docs = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [
+      Query.equal('userId', userId),
+    ]);
     if (docs.documents.length > 0) {
       return docs.documents[0].role; // Return the role of the user
     }
@@ -120,7 +137,11 @@ class MyAppwrite {
 
   getDepartment = async (departmentId: string) => {
     try {
-      const department = await db.getDocument(this.DB_ID, this.DEPARTMENT_COLLECTION_ID, departmentId);
+      const department = await db.getDocument(
+        this.DB_ID,
+        this.DEPARTMENT_COLLECTION_ID,
+        departmentId,
+      );
       return department;
     } catch (error) {
       console.log(error);
@@ -342,14 +363,14 @@ class MyAppwrite {
     try {
       const response = await db.listDocuments(this.DB_ID, collectionId);
       if (!response) {
-        throw new Error("Internal Server Error!");
+        throw new Error('Internal Server Error!');
       }
       return response.documents;
     } catch (error) {
-      console.log("Error getting documents of activity: ", error);
+      console.log('Error getting documents of activity: ', error);
       throw error;
     }
-  }
+  };
 }
 
 export const myAppwrite = new MyAppwrite();

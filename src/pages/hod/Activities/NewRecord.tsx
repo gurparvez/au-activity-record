@@ -6,6 +6,7 @@ import { myAppwrite } from '@/api/appwrite';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
@@ -42,6 +43,8 @@ const NewRecord = () => {
   const activity = useSelector((state: RootState) =>
     state.activities.activities.find((act) => act.collectionId === id)
   );
+
+  console.log(activity);
 
   // Initialize form data
   const initialFormData: FormData = activity?.attributes.reduce((acc, attr) => ({
@@ -81,14 +84,112 @@ const NewRecord = () => {
     }));
   };
 
+  const getInputComponent = (attr: Attribute, value: string, index?: number) => {
+    const inputId = index !== undefined ? `${attr.key}-${index}` : attr.key;
+    const onChange = (e: string | React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = typeof e === 'string' ? e : e.target.value;
+      handleInputChange(attr.key, newValue, index);
+    };
+
+    switch (attr.type) {
+      case 'integer':
+      case 'float':
+      case 'double':
+        return (
+          <Input
+            id={inputId}
+            type="number"
+            value={value}
+            onChange={onChange}
+            placeholder={`Enter ${formatAttributeKey(attr.key)}`}
+            required={attr.required && (index === undefined || index === 0)}
+          />
+        );
+      case 'boolean':
+        return (
+          <Select onValueChange={onChange} value={value}>
+            <SelectTrigger id={inputId}>
+              <SelectValue placeholder={`Select ${formatAttributeKey(attr.key)}`} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">True</SelectItem>
+              <SelectItem value="false">False</SelectItem>
+            </SelectContent>
+          </Select>
+        );
+      case 'email':
+        return (
+          <Input
+            id={inputId}
+            type="email"
+            value={value}
+            onChange={onChange}
+            placeholder={`Enter ${formatAttributeKey(attr.key)}`}
+            required={attr.required && (index === undefined || index === 0)}
+          />
+        );
+      case 'url':
+        return (
+          <Input
+            id={inputId}
+            type="url"
+            value={value}
+            onChange={onChange}
+            placeholder={`Enter ${formatAttributeKey(attr.key)}`}
+            required={attr.required && (index === undefined || index === 0)}
+          />
+        );
+      case 'datetime':
+        return (
+          <Input
+            id={inputId}
+            type="datetime-local"
+            value={value}
+            onChange={onChange}
+            placeholder={`Enter ${formatAttributeKey(attr.key)}`}
+            required={attr.required && (index === undefined || index === 0)}
+          />
+        );
+      case 'ip':
+      case 'string':
+      default:
+        if (attr.elements && attr.elements.length > 0) {
+          return (
+            <Select onValueChange={onChange} value={value}>
+              <SelectTrigger id={inputId}>
+                <SelectValue placeholder={`Select ${formatAttributeKey(attr.key)}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {attr.elements.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        }
+        return (
+          <Input
+            id={inputId}
+            type="text"
+            value={value}
+            onChange={onChange}
+            placeholder={`Enter ${formatAttributeKey(attr.key)}`}
+            required={attr.required && (index === undefined || index === 0)}
+          />
+        );
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       // Prepare data for submission
-      const data: Record<string, any> = Object.keys(formData).reduce((acc, key) => {
-        const attr = activity.attributes.find(a => a.key === key);
+      const data = Object.keys(formData).reduce((acc, key) => {
+        const attr = activity.attributes.find((a) => a.key === key);
         if (!attr) return acc;
 
         let value = formData[key];
@@ -100,12 +201,38 @@ const NewRecord = () => {
         }
 
         // Convert to appropriate type
-        if (attr.type === 'integer') {
-          value = attr.array ? value.map((v: string) => parseInt(v)) : parseInt(value);
-        } else if (attr.type === 'double') {
-          value = attr.array ? value.map((v: string) => parseFloat(v)) : parseFloat(value);
-        } else if (attr.type === 'boolean') {
-          value = attr.array ? value.map((v: string) => v === 'true') : value === 'true';
+        switch (attr.type) {
+          case 'integer':
+            value = attr.array ? value.map((v: string) => parseInt(v, 10)) : parseInt(value, 10);
+            break;
+          case 'float':
+          case 'double':
+            value = attr.array ? value.map((v: string) => parseFloat(v)) : parseFloat(value);
+            break;
+          case 'boolean':
+            value = attr.array ? value.map((v: string) => v === 'true') : value === 'true';
+            break;
+          case 'enum':
+            if (attr.array) {
+              value.forEach((v: string) => {
+                if (!attr.elements?.includes(v)) {
+                  throw new Error(`Invalid enum value "${v}" for ${formatAttributeKey(key)}`);
+                }
+              });
+            } else if (!attr.elements?.includes(value)) {
+              throw new Error(`Invalid enum value "${value}" for ${formatAttributeKey(key)}`);
+            }
+            break;
+          case 'datetime':
+            if (value && !isNaN(new Date(value).getTime())) {
+              value = new Date(value).toISOString();
+            } else if (attr.required) {
+              throw new Error(`Invalid datetime for ${formatAttributeKey(key)}`);
+            }
+            break;
+          default:
+            // string, email, url, ip: keep as string
+            break;
         }
 
         return { ...acc, [key]: value };
@@ -139,14 +266,7 @@ const NewRecord = () => {
                   <div className="space-y-2">
                     {(formData[attr.key] || []).map((value: string, index: number) => (
                       <div key={`${attr.key}-${index}`} className="flex items-center space-x-2">
-                        <Input
-                          id={`${attr.key}-${index}`}
-                          type={attr.type === 'integer' || attr.type === 'double' ? 'number' : 'text'}
-                          value={value}
-                          onChange={(e) => handleInputChange(attr.key, e.target.value, index)}
-                          placeholder={`Enter ${formatAttributeKey(attr.key)}`}
-                          required={attr.required && index === 0}
-                        />
+                        {getInputComponent(attr, value, index)}
                         <Button
                           type="button"
                           variant="destructive"
@@ -168,14 +288,7 @@ const NewRecord = () => {
                     </Button>
                   </div>
                 ) : (
-                  <Input
-                    id={attr.key}
-                    type={attr.type === 'integer' || attr.type === 'double' ? 'number' : 'text'}
-                    value={formData[attr.key] || ''}
-                    onChange={(e) => handleInputChange(attr.key, e.target.value)}
-                    placeholder={`Enter ${formatAttributeKey(attr.key)}`}
-                    required={attr.required}
-                  />
+                  getInputComponent(attr, formData[attr.key] || '')
                 )}
               </div>
             ))}

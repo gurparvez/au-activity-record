@@ -20,8 +20,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { myAppwrite } from '@/api/appwrite';
-import { Trash2 } from 'lucide-react';
-import { sanitizeKey } from '@/utils';
+import { Trash2, Plus, X } from 'lucide-react';
+import { formatAttributeKey, sanitizeKey } from '@/utils';
 
 // Define the type for an attribute
 interface Attribute {
@@ -29,6 +29,8 @@ interface Attribute {
   attributeName: string;
   attributeType: string;
   isRequired: boolean;
+  isArray: boolean;
+  elements?: string[]; // For enum attributes
 }
 
 // Define props interface
@@ -51,37 +53,113 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
     'boolean',
     'email',
     'enum',
-    'ip',
-    'url',
     'datetime',
+    'url',
+    'ip',
   ];
 
-  // Function to add new attribute input pair
+  // Function to validate attribute name
+  const isValidAttributeName = (name: string): boolean => {
+    if (!name.trim()) return false;
+    try {
+      const sanitized = sanitizeKey(name);
+      return sanitized.length > 0 && /^[a-z0-9_]+$/.test(sanitized);
+    } catch {
+      return false;
+    }
+  };
+
+  // Function to add new attribute
   const addAttribute = () => {
     setAttributes([
       ...attributes,
-      { id: Date.now(), attributeName: '', attributeType: '', isRequired: false },
+      {
+        id: Date.now(),
+        attributeName: '',
+        attributeType: '',
+        isRequired: false,
+        isArray: false,
+        elements: [],
+      },
     ]);
   };
 
   // Function to update attribute name
   const updateAttributeName = (id: number, value: string) => {
     setAttributes(
-      attributes.map((attr) => (attr.id === id ? { ...attr, attributeName: value } : attr)),
+      attributes.map((attr) =>
+        attr.id === id ? { ...attr, attributeName: value } : attr
+      )
     );
   };
 
   // Function to update attribute type
   const updateAttributeType = (id: number, value: string) => {
     setAttributes(
-      attributes.map((attr) => (attr.id === id ? { ...attr, attributeType: value } : attr)),
+      attributes.map((attr) =>
+        attr.id === id
+          ? { ...attr, attributeType: value, elements: value === 'enum' ? attr.elements || [] : [] }
+          : attr
+      )
     );
   };
 
   // Function to update required status
   const updateRequiredStatus = (id: number, checked: boolean) => {
     setAttributes(
-      attributes.map((attr) => (attr.id === id ? { ...attr, isRequired: checked } : attr)),
+      attributes.map((attr) =>
+        attr.id === id ? { ...attr, isRequired: checked } : attr
+      )
+    );
+  };
+
+  // Function to update array status
+  const updateArrayStatus = (id: number, checked: boolean) => {
+    setAttributes(
+      attributes.map((attr) =>
+        attr.id === id ? { ...attr, isArray: checked } : attr
+      )
+    );
+  };
+
+  // Function to update enum elements
+  const updateEnumElement = (id: number, index: number, value: string) => {
+    setAttributes(
+      attributes.map((attr) =>
+        attr.id === id
+          ? {
+              ...attr,
+              elements: attr.elements?.map((el, i) =>
+                i === index ? value : el
+              ),
+            }
+          : attr
+      )
+    );
+  };
+
+  // Function to add a new enum element
+  const addEnumElement = (id: number) => {
+    setAttributes(
+      attributes.map((attr) =>
+        attr.id === id
+          ? { ...attr, elements: [...(attr.elements || []), ''] }
+          : attr
+      )
+    );
+  };
+
+  // Function to remove an enum element
+  const removeEnumElement = (id: number, index: number) => {
+    setAttributes(
+      attributes.map((attr) =>
+        attr.id === id
+          ? {
+              ...attr,
+              elements: attr.elements?.filter((_, i) => i !== index),
+            }
+          : attr
+      )
     );
   };
 
@@ -97,30 +175,72 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
     setError(null);
   };
 
+  // Validate and submit the form
   const onSubmit = async () => {
     setLoading(true);
     setError(null);
 
-    const formattedAttributes = attributes.map(attr => ({
+    // Validation
+    if (!activityName.trim()) {
+      setError('Activity name is required.');
+      setLoading(false);
+      return;
+    }
+
+    if (attributes.length === 0) {
+      setError('At least one attribute is required.');
+      setLoading(false);
+      return;
+    }
+
+    for (const attr of attributes) {
+      if (!attr.attributeName.trim()) {
+        setError(`Attribute name cannot be empty.`);
+        setLoading(false);
+        return;
+      }
+      if (!isValidAttributeName(attr.attributeName)) {
+        setError(`Attribute name "${attr.attributeName}" is invalid. Use letters, numbers, spaces, or underscores.`);
+        setLoading(false);
+        return;
+      }
+      if (!attr.attributeType) {
+        setError(`Attribute "${attr.attributeName}" must have a type.`);
+        setLoading(false);
+        return;
+      }
+      if (attr.attributeType === 'enum' && (!attr.elements || attr.elements.length === 0)) {
+        setError(`Enum attribute "${attr.attributeName}" must have at least one element.`);
+        setLoading(false);
+        return;
+      }
+      if (attr.attributeType === 'enum' && attr.elements?.some((el) => !el.trim())) {
+        setError(`Enum attribute "${attr.attributeName}" cannot have empty elements.`);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Format attributes for Appwrite
+    const formattedAttributes = attributes.map((attr) => ({
       key: sanitizeKey(attr.attributeName),
       type: attr.attributeType,
-      required: attr.isRequired
+      required: attr.isRequired,
+      array: attr.isArray,
+      ...(attr.attributeType === 'enum' && attr.elements ? { elements: attr.elements } : {}),
     }));
-
-    console.log({
-      activityName,
-      attributes: formattedAttributes
-    });
 
     try {
       await myAppwrite.createNewActivityCollection(activityName, formattedAttributes);
       setLoading(false);
       setOpen(false); // Close the modal on success
+      clearAll(); // Reset form
       if (onActivityCreated) {
         onActivityCreated(); // Trigger parent re-render
       }
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : 'An error occurred while saving the activity.';
+      const errorMessage =
+        e instanceof Error ? e.message : 'An error occurred while saving the activity.';
       setError(errorMessage);
       setLoading(false);
     }
@@ -149,59 +269,116 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
             />
           </div>
           {attributes.map((attribute) => (
-            <div key={attribute.id} className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-4 space-y-2">
-                <Label htmlFor={`name-${attribute.id}`} className="sr-only">
-                  Attribute Name
-                </Label>
-                <Input
-                  id={`name-${attribute.id}`}
-                  value={attribute.attributeName}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    updateAttributeName(attribute.id, e.target.value)
-                  }
-                  placeholder="Attribute name"
+            <div key={attribute.id} className="space-y-4 border p-4 rounded-md">
+              <div className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-4 space-y-2">
+                  <Label htmlFor={`name-${attribute.id}`}>
+                    {attribute.attributeName.trim()
+                      ? formatAttributeKey(sanitizeKey(attribute.attributeName))
+                      : 'Attribute Name'}
+                  </Label>
+                  <Input
+                    id={`name-${attribute.id}`}
+                    value={attribute.attributeName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      updateAttributeName(attribute.id, e.target.value)
+                    }
+                    placeholder="Enter attribute name"
+                    aria-invalid={!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== ''}
+                    aria-describedby={`name-error-${attribute.id}`}
+                  />
+                  {!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== '' && (
+                    <p id={`name-error-${attribute.id}`} className="text-red-500 text-sm">
+                      Invalid name. Use letters, numbers, spaces, or underscores.
+                    </p>
+                  )}
+                </div>
+                <div className="col-span-4 space-y-2">
+                  <Label htmlFor={`type-${attribute.id}`}>Attribute Type</Label>
+                  <Select
+                    onValueChange={(value: string) => updateAttributeType(attribute.id, value)}
+                    value={attribute.attributeType}
+                  >
+                    <SelectTrigger id={`type-${attribute.id}`}>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {attributeTypes.map((type) => (
+                        <SelectItem key={type} value={type} className="hover:cursor-pointer">
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 flex items-center space-x-2">
+                  <Checkbox
+                    id={`required-${attribute.id}`}
+                    checked={attribute.isRequired}
+                    onCheckedChange={(checked: boolean) =>
+                      updateRequiredStatus(attribute.id, checked)
+                    }
+                  />
+                  <Label htmlFor={`required-${attribute.id}`}>Required</Label>
+                </div>
+                <div className="col-span-2">
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => deleteAttribute(attribute.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                {/* <Checkbox
+                  id={`array-${attribute.id}`}
+                  checked={attribute.isArray}
+                  onCheckedChange={(checked: boolean) => updateArrayStatus(attribute.id, checked)}
                 />
+                <Label htmlFor={`array-${attribute.id}`}>Array</Label> */}
               </div>
-              <div className="col-span-4 space-y-2">
-                <Label htmlFor={`type-${attribute.id}`} className="sr-only">
-                  Attribute Type
-                </Label>
-                <Select
-                  onValueChange={(value: string) => updateAttributeType(attribute.id, value)}
-                  value={attribute.attributeType}
-                >
-                  <SelectTrigger id={`type-${attribute.id}`}>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {attributeTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="hover:cursor-pointer">
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2 flex items-center space-x-2">
-                <Checkbox
-                  id={`required-${attribute.id}`}
-                  checked={attribute.isRequired}
-                  onCheckedChange={(checked: boolean) =>
-                    updateRequiredStatus(attribute.id, checked)
-                  }
-                />
-                <Label htmlFor={`required-${attribute.id}`}>Required</Label>
-              </div>
-              <div className="col-span-2">
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => deleteAttribute(attribute.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              {attribute.attributeType === 'enum' && (
+                <div className="space-y-2">
+                  <Label>Enum Elements</Label>
+                  {attribute.elements?.map((element, index) => (
+                    <div key={`element-${attribute.id}-${index}`} className="flex items-center space-x-2">
+                      <Input
+                        id={`element-${attribute.id}-${index}`}
+                        value={element}
+                        onChange={(e) => updateEnumElement(attribute.id, index, e.target.value)}
+                        placeholder={`Enter enum element ${index + 1}`}
+                        aria-invalid={!element.trim()}
+                        aria-describedby={`element-error-${attribute.id}-${index}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => removeEnumElement(attribute.id, index)}
+                        disabled={attribute.elements?.length === 1}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      {!element.trim() && (
+                        <p id={`element-error-${attribute.id}-${index}`} className="text-red-500 text-sm">
+                          Element cannot be empty.
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addEnumElement(attribute.id)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Enum Element
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
           <Button variant="outline" onClick={addAttribute}>

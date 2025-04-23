@@ -22,7 +22,7 @@ interface Document {
 
 const Activity = () => {
   const { id } = useParams<{ id: string }>();
-  console.log(id);
+  // console.log(id);
 
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

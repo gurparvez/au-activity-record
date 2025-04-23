@@ -1,3 +1,4 @@
 import { sanitizeKey } from './SanitizeKey';
+import { formatAttributeKey } from './formatAttributeKey';
 
-export { sanitizeKey };
+export { sanitizeKey, formatAttributeKey };

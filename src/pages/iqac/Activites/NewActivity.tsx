@@ -22,6 +22,7 @@ import {
 import { myAppwrite } from '@/api/appwrite';
 import { Trash2, Plus, X } from 'lucide-react';
 import { formatAttributeKey, sanitizeKey } from '@/utils';
+import { ActivityDetail } from '@/types';
 
 // Define the type for an attribute
 interface Attribute {
@@ -30,21 +31,26 @@ interface Attribute {
   attributeType: string;
   isRequired: boolean;
   isArray: boolean;
-  elements?: string[]; // For enum attributes
+  elements?: string[];
 }
 
 // Define props interface
 interface NewActivityProps {
   onActivityCreated?: () => void;
+  activityToEdit?: ActivityDetail | null;
+  isEditing?: boolean;
+  onEditComplete?: () => void;
 }
 
-const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
+const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onEditComplete }: NewActivityProps) => {
   const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [activityName, setActivityName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<boolean>(false);
-  const [whoFilled, setWhoFilled] = useState<boolean>(true); // New state for Who filled checkbox
+  const [whoFilled, setWhoFilled] = useState<boolean>(true);
+  const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+  const [forceUpdate, setForceUpdate] = useState<boolean>(false);
 
   // Appwrite-compatible attribute types
   const attributeTypes: string[] = [
@@ -70,10 +76,32 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
     }
   };
 
+  // Normalize attribute type (convert double to float)
+  const normalizeAttributeType = (type: string): string => {
+    if (type === 'double') return 'float';
+    return type;
+  };
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (isEditing && activityToEdit) {
+      setActivityName(activityToEdit.title);
+      setWhoFilled(activityToEdit.attributes.some(attr => attr.key === 'user'));
+      setAttributes(activityToEdit.attributes.map((attr, index) => ({
+        id: index + 1,
+        attributeName: attr.key,
+        attributeType: normalizeAttributeType(attr.type),
+        isRequired: attr.required,
+        isArray: attr.array || false,
+        elements: attr.elements || [],
+      })));
+      setOpen(true);
+    }
+  }, [activityToEdit, isEditing]);
+
   // Effect to handle user attribute based on whoFilled checkbox
   useEffect(() => {
     if (whoFilled) {
-      // Add user attribute if not already present
       if (!attributes.some(attr => attr.attributeName === 'user')) {
         setAttributes(prev => [
           ...prev,
@@ -87,7 +115,6 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
         ]);
       }
     } else {
-      // Remove user attribute if present
       setAttributes(prev => prev.filter(attr => attr.attributeName !== 'user'));
     }
   }, [whoFilled]);
@@ -187,7 +214,33 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
     setAttributes([]);
     setActivityName('');
     setError(null);
-    setWhoFilled(true); // Reset whoFilled to default
+    setWhoFilled(true);
+    setOpen(false);
+    setForceUpdate(false);
+    if (isEditing && onEditComplete) {
+      onEditComplete();
+    }
+  };
+
+  // Check if attributes have changed (for edit mode)
+  const haveAttributesChanged = () => {
+    if (!isEditing || !activityToEdit) return false;
+    const originalAttributes = activityToEdit.attributes;
+    const currentAttributes = attributes;
+
+    if (activityToEdit.title !== activityName.trim()) return true;
+    if (originalAttributes.length !== currentAttributes.length) return true;
+
+    return originalAttributes.some((origAttr, index) => {
+      const currAttr = currentAttributes[index];
+      return (
+        origAttr.key !== sanitizeKey(currAttr.attributeName) ||
+        normalizeAttributeType(origAttr.type) !== currAttr.attributeType ||
+        origAttr.required !== currAttr.isRequired ||
+        origAttr.array !== currAttr.isArray ||
+        JSON.stringify(origAttr.elements || []) !== JSON.stringify(currAttr.elements || [])
+      );
+    });
   };
 
   // Validate and submit the form
@@ -197,7 +250,7 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
 
     // Validation
     if (!activityName.trim()) {
-      setError('Activity name is required.');
+      setError('Activity from is required.');
       setLoading(false);
       return;
     }
@@ -245,13 +298,29 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
       ...(attr.attributeType === 'enum' && attr.elements ? { elements: attr.elements } : {}),
     }));
 
-    try {
-      await myAppwrite.createNewActivityCollection(activityName, formattedAttributes);
+    // Check if attributes have changed and require confirmation
+    if (isEditing && haveAttributesChanged() && !forceUpdate) {
+      setShowConfirmDialog(true);
       setLoading(false);
-      setOpen(false); // Close the modal on success
-      clearAll(); // Reset form
+      return;
+    }
+
+    try {
+      if (isEditing && activityToEdit) {
+        await myAppwrite.updateActivityCollection(
+          activityToEdit.collectionId,
+          activityName,
+          formattedAttributes,
+          forceUpdate
+        );
+      } else {
+        await myAppwrite.createNewActivityCollection(activityName, formattedAttributes);
+      }
+      setLoading(false);
+      setOpen(false);
+      clearAll();
       if (onActivityCreated) {
-        onActivityCreated(); // Trigger parent re-render
+        onActivityCreated();
       }
     } catch (e: unknown) {
       const errorMessage =
@@ -261,186 +330,220 @@ const NewActivity = ({ onActivityCreated }: NewActivityProps) => {
     }
   };
 
+  // Handle confirmation for attribute changes
+  const handleConfirmUpdate = () => {
+    setForceUpdate(true);
+    setShowConfirmDialog(false);
+    onSubmit();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>New</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>New Activity</DialogTitle>
-          <DialogDescription>
-            Create a new activity form with attributes for Appwrite. Click save when you're done.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="activity-name">Activity Name</Label>
-            <Input
-              id="activity-name"
-              value={activityName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActivityName(e.target.value)}
-              placeholder="Enter activity name"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="who-filled"
-              checked={whoFilled}
-              onCheckedChange={(checked: boolean) => setWhoFilled(checked)}
-            />
-            <Label htmlFor="who-filled">Who filled (adds user attribute)</Label>
-          </div>
-          {attributes.map((attribute) => (
-            <div key={attribute.id} className="space-y-4 border p-4 rounded-md">
-              <div className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-4 space-y-2">
-                  <Label htmlFor={`name-${attribute.id}`}>
-                    {attribute.attributeName.trim()
-                      ? formatAttributeKey(sanitizeKey(attribute.attributeName))
-                      : 'Attribute Name'}
-                  </Label>
-                  <Input
-                    id={`name-${attribute.id}`}
-                    value={attribute.attributeName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      updateAttributeName(attribute.id, e.target.value)
-                    }
-                    placeholder="Enter attribute name"
-                    aria-invalid={!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== ''}
-                    aria-describedby={`name-error-${attribute.id}`}
-                    disabled={attribute.attributeName === 'user'} // Disable editing for user attribute
-                  />
-                  {!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== '' && (
-                    <p id={`name-error-${attribute.id}`} className="text-red-500 text-sm">
-                      Invalid name. Use letters, numbers, spaces, or underscores.
-                    </p>
-                  )}
-                </div>
-                <div className="col-span-4 space-y-2">
-                  <Label htmlFor={`type-${attribute.id}`}>Attribute Type</Label>
-                  <Select
-                    onValueChange={(value: string) => updateAttributeType(attribute.id, value)}
-                    value={attribute.attributeType}
-                    disabled={attribute.attributeName === 'user'} // Disable type selection for user attribute
-                  >
-                    <SelectTrigger id={`type-${attribute.id}`}>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {attributeTypes.map((type) => (
-                        <SelectItem key={type} value={type} className="hover:cursor-pointer">
-                          {type.charAt(0).toUpperCase() + type.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 flex items-center space-x-2">
-                  <Checkbox
-                    id={`required-${attribute.id}`}
-                    checked={attribute.isRequired}
-                    onCheckedChange={(checked: boolean) =>
-                      updateRequiredStatus(attribute.id, checked)
-                    }
-                    disabled={attribute.attributeName === 'user'} // Disable required checkbox for user attribute
-                  />
-                  <Label htmlFor={`required-${attribute.id}`}>Required</Label>
-                </div>
-                <div className="col-span-2">
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => deleteAttribute(attribute.id)}
-                    disabled={attribute.attributeName === 'user'} // Disable delete for user attribute
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              {attribute.attributeType === 'enum' && (
-                <div className="space-y-2">
-                  <Label>Enum Elements</Label>
-                  {attribute.elements?.map((element, index) => (
-                    <div key={`element-${attribute.id}-${index}`} className="flex items-center space-x-2">
-                      <Input
-                        id={`element-${attribute.id}-${index}`}
-                        value={element}
-                        onChange={(e) => updateEnumElement(attribute.id, index, e.target.value)}
-                        placeholder={`Enter enum element ${index + 1}`}
-                        aria-invalid={!element.trim()}
-                        aria-describedby={`element-error-${attribute.id}-${index}`}
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => removeEnumElement(attribute.id, index)}
-                        disabled={attribute.elements?.length === 1}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                      {!element.trim() && (
-                        <p id={`element-error-${attribute.id}-${index}`} className="text-red-500 text-sm">
-                          Element cannot be empty.
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => addEnumElement(attribute.id)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Enum Element
-                  </Button>
-                </div>
-              )}
+    <>
+      <Dialog open={open} onOpenChange={(open) => {
+        setOpen(open);
+        if (!open) clearAll();
+      }}>
+        <DialogTrigger asChild>
+          <Button>{isEditing ? '' : 'New'}</Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Edit Activity' : 'New Activity'}</DialogTitle>
+            <DialogDescription>
+              {isEditing
+                ? 'Update the activity form with attributes for Appwrite. Click save when you\'re done.'
+                : 'Create a new activity form with attributes for Appwrite. Click save when you\'re done.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="activity-name">Activity Name</Label>
+              <Input
+                id="activity-name"
+                value={activityName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActivityName(e.target.value)}
+                placeholder="Enter activity name"
+              />
             </div>
-          ))}
-          <Button variant="outline" onClick={addAttribute}>
-            Add Attribute
-          </Button>
-        </div>
-        {error && (
-          <div className="text-red-500 text-sm" role="alert">
-            {error}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="who-filled"
+                checked={whoFilled}
+                onCheckedChange={(checked: boolean) => setWhoFilled(checked)}
+              />
+              <Label htmlFor="who-filled">Who filled (adds user attribute)</Label>
+            </div>
+            {attributes.map((attribute) => (
+              <div className="space-y-4 border p-4 rounded-md" key={attribute.id}>
+                <div className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-4 space-y-2">
+                    <Label htmlFor={`name-${attribute.id}`}>
+                      {attribute.attributeName.trim()
+                        ? formatAttributeKey(sanitizeKey(attribute.attributeName))
+                        : 'Attribute Name'}
+                    </Label>
+                    <Input
+                      id={`name-${attribute.id}`}
+                      value={attribute.attributeName}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        updateAttributeName(attribute.id, e.target.value)
+                      }
+                      placeholder="Enter attribute name"
+                      aria-invalid={!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== ''}
+                      aria-describedby={`name-error-${attribute.id}`}
+                      disabled={attribute.attributeName === 'user'}
+                    />
+                    {!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== '' && (
+                      <p id={`name-error-${attribute.id}`} className="text-red-500 text-sm">
+                        Invalid name. Use letters, numbers, spaces, or underscores.
+                      </p>
+                    )}
+                  </div>
+                  <div className="col-span-4 space-y-2">
+                    <Label htmlFor={`type-${attribute.id}`}>Attribute Type</Label>
+                    <Select
+                      onValueChange={(value: string) => updateAttributeType(attribute.id, value)}
+                      value={attribute.attributeType}
+                      disabled={attribute.attributeName === 'user'}
+                    >
+                      <SelectTrigger id={`type-${attribute.id}`}>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {attributeTypes.map((type) => (
+                          <SelectItem key={type} value={type} className="hover:cursor-pointer">
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <Checkbox
+                      id={`required-${attribute.id}`}
+                      checked={attribute.isRequired}
+                      onCheckedChange={(checked: boolean) =>
+                        updateRequiredStatus(attribute.id, checked)
+                      }
+                      disabled={attribute.attributeName === 'user'}
+                    />
+                    <Label htmlFor={`required-${attribute.id}`}>Required</Label>
+                  </div>
+                  <div className="col-span-2">
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => deleteAttribute(attribute.id)}
+                      disabled={attribute.attributeName === 'user'}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                {attribute.attributeType === 'enum' && (
+                  <div className="space-y-2">
+                    <Label>Enum Elements</Label>
+                    {attribute.elements?.map((element, index) => (
+                      <div key={`element-${attribute.id}-${index}`} className="flex items-center space-x-2">
+                        <Input
+                          id={`element-${attribute.id}-${index}`}
+                          value={element}
+                          onChange={(e) => updateEnumElement(attribute.id, index, e.target.value)}
+                          placeholder={`Enter enum element ${index + 1}`}
+                          aria-invalid={!element.trim()}
+                          aria-describedby={`element-error-${attribute.id}-${index}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => removeEnumElement(attribute.id, index)}
+                          disabled={attribute.elements?.length === 1}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        {!element.trim() && (
+                          <p id={`element-error-${attribute.id}-${index}`} className="text-red-500 text-sm">
+                            Element cannot be empty.
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addEnumElement(attribute.id)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Enum Element
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+            <Button variant="outline" onClick={addAttribute}>
+              Add Attribute
+            </Button>
           </div>
-        )}
-        <DialogFooter>
-          <Button variant="outline" onClick={clearAll} disabled={loading}>
-            Clear All
-          </Button>
-          <Button onClick={onSubmit} disabled={loading}>
-            Save changes
-            {loading && (
-              <svg
-                className="animate-spin ml-2 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          {error && (
+            <div className="text-red-500 text-sm" role="alert">
+              {error}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={clearAll} disabled={loading}>
+              Clear All
+            </Button>
+            <Button onClick={onSubmit} disabled={loading}>
+              Save changes
+              {loading && (
+                <svg
+                  className="animate-spin ml-2 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for Attribute Changes */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Confirm Attribute Changes</DialogTitle>
+            <DialogDescription>
+              The changes to the activity’s attributes may result in data loss for existing records. Are you sure you want to proceed? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmUpdate}>
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

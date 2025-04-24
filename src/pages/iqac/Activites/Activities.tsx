@@ -25,16 +25,34 @@ const Activities = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [activityToDelete, setActivityToDelete] = useState<string | null>(null);
+  const [activityToEdit, setActivityToEdit] = useState<ActivityDetail | null>(null);
   const dispatch = useDispatch();
 
   const fetchActivities = async () => {
     try {
       setLoading(true);
       const { activityDetails, detailedActivities } = await myAppwrite.getAllActivities();
-      setActs(activityDetails);
+      
+      const processedActivityDetails = activityDetails.map(activity => ({
+        ...activity,
+        attributes: activity.attributes.map(attr => ({
+          ...attr,
+          type: attr.elements && attr.elements.length > 0 ? 'enum' : attr.type,
+        })),
+      }));
+
+      const processedDetailedActivities = detailedActivities.map(activity => ({
+        ...activity,
+        attributes: activity.attributes.map(attr => ({
+          ...attr,
+          type: attr.elements && attr.elements.length > 0 ? 'enum' : attr.type,
+        })),
+      }));
+
+      setActs(processedActivityDetails);
       dispatch(
         setActivities(
-          detailedActivities.map((activity) => ({
+          processedDetailedActivities.map((activity) => ({
             collectionId: activity.collectionId,
             name: activity.name,
             attributes: activity.attributes,
@@ -72,6 +90,10 @@ const Activities = () => {
     setActivityToDelete(null);
   };
 
+  const openEditModal = (activity: ActivityDetail) => {
+    setActivityToEdit(activity);
+  };
+
   useEffect(() => {
     fetchActivities();
   }, []);
@@ -82,7 +104,12 @@ const Activities = () => {
         <h1>Activities</h1>
         <div className="flex items-center *:mx-2">
           <Button variant="outline">Select</Button>
-          <NewActivity onActivityCreated={fetchActivities} />
+          <NewActivity
+            onActivityCreated={fetchActivities}
+            activityToEdit={activityToEdit}
+            isEditing={!!activityToEdit}
+            onEditComplete={() => setActivityToEdit(null)}
+          />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -120,6 +147,17 @@ const Activities = () => {
                     Last filled: {activity.lastFilled}
                   </span>
                   <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute bottom-2 right-25"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      openEditModal(activity);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
                     variant="destructive"
                     size="sm"
                     className="absolute bottom-2 right-5"
@@ -151,11 +189,9 @@ const Activities = () => {
               Cancel
             </Button>
             {deleteLoading ? (
-              <Button
-                variant="destructive"
-                disabled={true}
-              >
+              <Button variant="destructive" disabled={true}>
                 Delete
+                <Loader2 className="animate-spin" />
               </Button>
             ) : (
               <Button
@@ -163,7 +199,6 @@ const Activities = () => {
                 onClick={() => activityToDelete && handleDelete(activityToDelete)}
               >
                 Delete
-                <Loader2 className="animate-spin" />
               </Button>
             )}
           </DialogFooter>

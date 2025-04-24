@@ -318,7 +318,7 @@ class MyAppwrite {
     }
   };
 
-  updateActivityCollection = async (collectionId: string, name: string, attributes: any[]) => {
+  updateActivityCollection = async (collectionId: string, name: string, attributes: any[], forceUpdate = false) => {
     const user = await account.get();
 
     try {
@@ -334,6 +334,7 @@ class MyAppwrite {
         attributes: attributes,
         isActivity: true,
         userId: user.$id,
+        forceUpdate: forceUpdate
       };
 
       const execution = await functions.createExecution(

@@ -32,7 +32,7 @@ const Activities = () => {
     try {
       setLoading(true);
       const { activityDetails, detailedActivities } = await myAppwrite.getAllActivities();
-      
+
       const processedActivityDetails = activityDetails.map(activity => ({
         ...activity,
         attributes: activity.attributes.map(attr => ({
@@ -103,7 +103,7 @@ const Activities = () => {
       <div className="flex justify-between">
         <h1>Activities</h1>
         <div className="flex items-center *:mx-2">
-          <Button variant="outline">Select</Button>
+          {/* <Button variant="outline">Select</Button> */}
           <NewActivity
             onActivityCreated={fetchActivities}
             activityToEdit={activityToEdit}

@@ -39,6 +39,7 @@ const Activity = () => {
     try {
       setLoading(true);
       const response = await myAppwrite.getDocumentsOfActivity(id);
+      console.log(response)
       setDocuments(response);
     } catch (err: any) {
       setError(err.message);

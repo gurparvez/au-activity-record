@@ -42,7 +42,12 @@ interface NewActivityProps {
   onEditComplete?: () => void;
 }
 
-const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onEditComplete }: NewActivityProps) => {
+const NewActivity = ({
+  onActivityCreated,
+  activityToEdit,
+  isEditing = false,
+  onEditComplete,
+}: NewActivityProps) => {
   const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [activityName, setActivityName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -86,15 +91,17 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
   useEffect(() => {
     if (isEditing && activityToEdit) {
       setActivityName(activityToEdit.title);
-      setWhoFilled(activityToEdit.attributes.some(attr => attr.key === 'user'));
-      setAttributes(activityToEdit.attributes.map((attr, index) => ({
-        id: index + 1,
-        attributeName: attr.key,
-        attributeType: normalizeAttributeType(attr.type),
-        isRequired: attr.required,
-        isArray: attr.array || false,
-        elements: attr.elements || [],
-      })));
+      setWhoFilled(activityToEdit.attributes.some((attr) => attr.key === 'user'));
+      setAttributes(
+        activityToEdit.attributes.map((attr, index) => ({
+          id: index + 1,
+          attributeName: attr.key,
+          attributeType: normalizeAttributeType(attr.type),
+          isRequired: attr.required,
+          isArray: attr.array || false,
+          elements: attr.elements || [],
+        })),
+      );
       setOpen(true);
     }
   }, [activityToEdit, isEditing]);
@@ -102,8 +109,8 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
   // Effect to handle user attribute based on whoFilled checkbox
   useEffect(() => {
     if (whoFilled) {
-      if (!attributes.some(attr => attr.attributeName === 'user')) {
-        setAttributes(prev => [
+      if (!attributes.some((attr) => attr.attributeName === 'user')) {
+        setAttributes((prev) => [
           ...prev,
           {
             id: Date.now(),
@@ -111,11 +118,11 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
             attributeType: 'string',
             isRequired: true,
             isArray: false,
-          }
+          },
         ]);
       }
     } else {
-      setAttributes(prev => prev.filter(attr => attr.attributeName !== 'user'));
+      setAttributes((prev) => prev.filter((attr) => attr.attributeName !== 'user'));
     }
   }, [whoFilled]);
 
@@ -137,9 +144,7 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
   // Function to update attribute name
   const updateAttributeName = (id: number, value: string) => {
     setAttributes(
-      attributes.map((attr) =>
-        attr.id === id ? { ...attr, attributeName: value } : attr
-      )
+      attributes.map((attr) => (attr.id === id ? { ...attr, attributeName: value } : attr)),
     );
   };
 
@@ -149,17 +154,15 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
       attributes.map((attr) =>
         attr.id === id
           ? { ...attr, attributeType: value, elements: value === 'enum' ? attr.elements || [] : [] }
-          : attr
-      )
+          : attr,
+      ),
     );
   };
 
   // Function to update required status
   const updateRequiredStatus = (id: number, checked: boolean) => {
     setAttributes(
-      attributes.map((attr) =>
-        attr.id === id ? { ...attr, isRequired: checked } : attr
-      )
+      attributes.map((attr) => (attr.id === id ? { ...attr, isRequired: checked } : attr)),
     );
   };
 
@@ -170,12 +173,10 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
         attr.id === id
           ? {
               ...attr,
-              elements: attr.elements?.map((el, i) =>
-                i === index ? value : el
-              ),
+              elements: attr.elements?.map((el, i) => (i === index ? value : el)),
             }
-          : attr
-      )
+          : attr,
+      ),
     );
   };
 
@@ -183,10 +184,8 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
   const addEnumElement = (id: number) => {
     setAttributes(
       attributes.map((attr) =>
-        attr.id === id
-          ? { ...attr, elements: [...(attr.elements || []), ''] }
-          : attr
-      )
+        attr.id === id ? { ...attr, elements: [...(attr.elements || []), ''] } : attr,
+      ),
     );
   };
 
@@ -199,8 +198,8 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
               ...attr,
               elements: attr.elements?.filter((_, i) => i !== index),
             }
-          : attr
-      )
+          : attr,
+      ),
     );
   };
 
@@ -268,7 +267,9 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
         return;
       }
       if (!isValidAttributeName(attr.attributeName)) {
-        setError(`Attribute name "${attr.attributeName}" is invalid. Use letters, numbers, spaces, or underscores.`);
+        setError(
+          `Attribute name "${attr.attributeName}" is invalid. Use letters, numbers, spaces, or underscores.`,
+        );
         setLoading(false);
         return;
       }
@@ -311,7 +312,7 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
           activityToEdit.collectionId,
           activityName,
           formattedAttributes,
-          forceUpdate
+          forceUpdate,
         );
       } else {
         await myAppwrite.createNewActivityCollection(activityName, formattedAttributes);
@@ -339,10 +340,13 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(open) => {
-        setOpen(open);
-        if (!open) clearAll();
-      }}>
+      <Dialog
+        open={open}
+        onOpenChange={(open) => {
+          setOpen(open);
+          if (!open) clearAll();
+        }}
+      >
         <DialogTrigger asChild>
           <Button>{isEditing ? '' : 'New'}</Button>
         </DialogTrigger>
@@ -351,8 +355,8 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
             <DialogTitle>{isEditing ? 'Edit Activity' : 'New Activity'}</DialogTitle>
             <DialogDescription>
               {isEditing
-                ? 'Update the activity form with attributes for Appwrite. Click save when you\'re done.'
-                : 'Create a new activity form with attributes for Appwrite. Click save when you\'re done.'}
+                ? "Update the activity form with attributes for Appwrite. Click save when you're done."
+                : "Create a new activity form with attributes for Appwrite. Click save when you're done."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -361,7 +365,9 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
               <Input
                 id="activity-name"
                 value={activityName}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActivityName(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setActivityName(e.target.value)
+                }
                 placeholder="Enter activity name"
               />
             </div>
@@ -389,15 +395,19 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
                         updateAttributeName(attribute.id, e.target.value)
                       }
                       placeholder="Enter attribute name"
-                      aria-invalid={!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== ''}
+                      aria-invalid={
+                        !isValidAttributeName(attribute.attributeName) &&
+                        attribute.attributeName !== ''
+                      }
                       aria-describedby={`name-error-${attribute.id}`}
                       disabled={attribute.attributeName === 'user'}
                     />
-                    {!isValidAttributeName(attribute.attributeName) && attribute.attributeName !== '' && (
-                      <p id={`name-error-${attribute.id}`} className="text-red-500 text-sm">
-                        Invalid name. Use letters, numbers, spaces, or underscores.
-                      </p>
-                    )}
+                    {!isValidAttributeName(attribute.attributeName) &&
+                      attribute.attributeName !== '' && (
+                        <p id={`name-error-${attribute.id}`} className="text-red-500 text-sm">
+                          Invalid name. Use letters, numbers, spaces, or underscores.
+                        </p>
+                      )}
                   </div>
                   <div className="col-span-4 space-y-2">
                     <Label htmlFor={`type-${attribute.id}`}>Attribute Type</Label>
@@ -444,7 +454,10 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
                   <div className="space-y-2">
                     <Label>Enum Elements</Label>
                     {attribute.elements?.map((element, index) => (
-                      <div key={`element-${attribute.id}-${index}`} className="flex items-center space-x-2">
+                      <div
+                        key={`element-${attribute.id}-${index}`}
+                        className="flex items-center space-x-2"
+                      >
                         <Input
                           id={`element-${attribute.id}-${index}`}
                           value={element}
@@ -463,7 +476,10 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
                           <X className="h-4 w-4" />
                         </Button>
                         {!element.trim() && (
-                          <p id={`element-error-${attribute.id}-${index}`} className="text-red-500 text-sm">
+                          <p
+                            id={`element-error-${attribute.id}-${index}`}
+                            className="text-red-500 text-sm"
+                          >
                             Element cannot be empty.
                           </p>
                         )}
@@ -530,7 +546,8 @@ const NewActivity = ({ onActivityCreated, activityToEdit, isEditing = false, onE
           <DialogHeader>
             <DialogTitle className="text-red-400">Confirm Attribute Changes</DialogTitle>
             <DialogDescription>
-              The changes to the activity’s attributes may result in data loss for existing records. Are you sure you want to proceed? This action cannot be undone.
+              The changes to the activity’s attributes may result in data loss for existing records.
+              Are you sure you want to proceed? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

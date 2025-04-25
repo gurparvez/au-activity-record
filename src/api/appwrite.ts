@@ -318,7 +318,12 @@ class MyAppwrite {
     }
   };
 
-  updateActivityCollection = async (collectionId: string, name: string, attributes: any[], forceUpdate = false) => {
+  updateActivityCollection = async (
+    collectionId: string,
+    name: string,
+    attributes: any[],
+    forceUpdate = false,
+  ) => {
     const user = await account.get();
 
     try {
@@ -334,7 +339,7 @@ class MyAppwrite {
         attributes: attributes,
         isActivity: true,
         userId: user.$id,
-        forceUpdate: forceUpdate
+        forceUpdate: forceUpdate,
       };
 
       const execution = await functions.createExecution(
@@ -344,6 +349,14 @@ class MyAppwrite {
       );
 
       const response = JSON.parse(execution.responseBody || '{}');
+
+      if (forceUpdate) {
+        const docs = await db.listDocuments(this.DB_ID, collectionId);
+        docs.documents.map(async (doc) => {
+          await db.deleteDocument(this.DB_ID, collectionId, doc.$id);
+        });
+      }
+
       if (!response) {
         throw new Error('Internal Server Error!');
       }

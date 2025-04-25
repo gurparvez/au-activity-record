@@ -423,6 +423,15 @@ class MyAppwrite {
       throw new Error('Failed to delete activity');
     }
   };
+
+  deleteDocument = async (collectionId: string, documentId: string) => {
+    try {
+      await db.deleteDocument(this.DB_ID, collectionId, documentId);
+    } catch (error) {
+      console.log("Error deleting document: ", error)
+      throw new Error('Failed to delete document');
+    }
+  }
 }
 
 export const myAppwrite = new MyAppwrite();

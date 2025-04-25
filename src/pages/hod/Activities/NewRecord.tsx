@@ -6,8 +6,13 @@ import { account, myAppwrite } from '@/api/appwrite';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 
 interface Attribute {
@@ -41,7 +46,7 @@ const NewRecord = () => {
 
   // Get activity from Redux
   const activity = useSelector((state: RootState) =>
-    state.activities.activities.find((act) => act.collectionId === id)
+    state.activities.activities.find((act) => act.collectionId === id),
   );
 
   // State for current user ID
@@ -49,12 +54,16 @@ const NewRecord = () => {
   const [loading, setLoading] = useState(false);
 
   // Initialize form data, excluding user attribute
-  const initialFormData: FormData = activity?.attributes
-    .filter(attr => attr.key !== 'user')
-    .reduce((acc, attr) => ({
-      ...acc,
-      [attr.key]: attr.array ? [''] : ''
-    }), {}) || {};
+  const initialFormData: FormData =
+    activity?.attributes
+      .filter((attr) => attr.key !== 'user')
+      .reduce(
+        (acc, attr) => ({
+          ...acc,
+          [attr.key]: attr.array ? [''] : '',
+        }),
+        {},
+      ) || {};
 
   const [formData, setFormData] = useState<FormData>(initialFormData);
 
@@ -90,14 +99,14 @@ const NewRecord = () => {
   const handleAddArrayItem = (key: string) => {
     setFormData((prev) => ({
       ...prev,
-      [key]: [...(prev[key] || []), '']
+      [key]: [...(prev[key] || []), ''],
     }));
   };
 
   const handleRemoveArrayItem = (key: string, index: number) => {
     setFormData((prev) => ({
       ...prev,
-      [key]: prev[key].filter((_: any, i: number) => i !== index)
+      [key]: prev[key].filter((_: any, i: number) => i !== index),
     }));
   };
 
@@ -110,12 +119,23 @@ const NewRecord = () => {
 
     switch (attr.type) {
       case 'integer':
+        return (
+          <Input
+            id={inputId}
+            type="number"
+            value={value}
+            onChange={onChange}
+            placeholder={`Enter ${formatAttributeKey(attr.key)}`}
+            required={attr.required && (index === undefined || index === 0)}
+          />
+        );
       case 'float':
       case 'double':
         return (
           <Input
             id={inputId}
             type="number"
+            step="any"
             value={value}
             onChange={onChange}
             placeholder={`Enter ${formatAttributeKey(attr.key)}`}
@@ -204,7 +224,6 @@ const NewRecord = () => {
     setLoading(true);
 
     try {
-      // Prepare data for submission
       const data: { [key: string]: any } = Object.keys(formData).reduce((acc, key) => {
         const attr = activity.attributes.find((a) => a.key === key);
         if (!attr) return acc;
@@ -217,7 +236,6 @@ const NewRecord = () => {
           return acc;
         }
 
-        // Convert to appropriate type
         switch (attr.type) {
           case 'integer':
             value = attr.array ? value.map((v: string) => parseInt(v, 10)) : parseInt(value, 10);
@@ -237,7 +255,7 @@ const NewRecord = () => {
                 }
               });
             } else if (!attr.elements?.includes(value)) {
-              throw new Error(`Invalid enum value "${value}" for contempo ${formatAttributeKey(key)}`);
+              throw new Error(`Invalid enum value "${value}" for ${formatAttributeKey(key)}`);
             }
             break;
           case 'datetime':
@@ -248,15 +266,13 @@ const NewRecord = () => {
             }
             break;
           default:
-            // string, email, url, ip: keep as string
             break;
         }
 
         return { ...acc, [key]: value };
       }, {});
 
-      // Add user ID if user attribute exists
-      const hasUserAttribute = activity.attributes.some(attr => attr.key === 'user');
+      const hasUserAttribute = activity.attributes.some((attr) => attr.key === 'user');
       if (hasUserAttribute) {
         if (!currentUserName) {
           throw new Error('User ID not available');
@@ -264,7 +280,6 @@ const NewRecord = () => {
         data.user = currentUserName;
       }
 
-      // Submit to Appwrite
       await myAppwrite.createDocument(id, data);
       toast.success('Record created successfully');
       navigate(`/team/hod/activity/${id}`);
@@ -276,19 +291,18 @@ const NewRecord = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>New Record for {activity.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="p-2">
+      <div className="-mx-4">
+        <div className="px-4">
+          <h1 className="text-2xl font-bold mb-4">New Record for {activity.name}</h1>
+          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-4">
             {activity.attributes
-              .filter(attr => attr.key !== 'user') // Hide user attribute
+              .filter((attr) => attr.key !== 'user')
               .map((attr) => (
                 <div key={attr.key} className="space-y-2">
                   <Label htmlFor={attr.key}>
-                    {formatAttributeKey(attr.key)} {attr.required && <span className="text-red-500">*</span>}
+                    {formatAttributeKey(attr.key)}{' '}
+                    {attr.required && <span className="text-red-500">*</span>}
                   </Label>
                   {attr.array ? (
                     <div className="space-y-2">
@@ -320,7 +334,7 @@ const NewRecord = () => {
                   )}
                 </div>
               ))}
-            <div className="flex justify-end space-x-2">
+            <div className="md:col-span-2 flex justify-end space-x-2 mt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -334,8 +348,8 @@ const NewRecord = () => {
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

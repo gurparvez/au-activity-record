@@ -45,7 +45,7 @@ const NewRecord = () => {
   );
 
   // State for current user ID
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Initialize form data, excluding user attribute
@@ -63,7 +63,7 @@ const NewRecord = () => {
     const fetchUser = async () => {
       try {
         const user = await account.get();
-        setCurrentUserId(user.$id);
+        setCurrentUserName(user.name);
       } catch (error) {
         console.error('Failed to fetch current user:', error);
         toast.error('Failed to fetch user information');
@@ -258,10 +258,10 @@ const NewRecord = () => {
       // Add user ID if user attribute exists
       const hasUserAttribute = activity.attributes.some(attr => attr.key === 'user');
       if (hasUserAttribute) {
-        if (!currentUserId) {
+        if (!currentUserName) {
           throw new Error('User ID not available');
         }
-        data.user = currentUserId;
+        data.user = currentUserName;
       }
 
       // Submit to Appwrite

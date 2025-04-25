@@ -249,7 +249,7 @@ const NewActivity = ({
 
     // Validation
     if (!activityName.trim()) {
-      setError('Activity from is required.');
+      setError('Activity name is required.');
       setLoading(false);
       return;
     }

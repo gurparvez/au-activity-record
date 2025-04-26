@@ -2,7 +2,6 @@ import { myAppwrite } from '@/api/appwrite';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { NavLink, useParams } from 'react-router';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -14,28 +13,44 @@ import {
 import { RootState } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatAttributeKey } from '@/utils';
 
 interface Document {
   $id: string;
   [key: string]: any;
 }
 
+// Utility function to format datetime
+const formatDateTime = (dateTime: string): string => {
+  if (!dateTime) return '-';
+  try {
+    const date = new Date(dateTime);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return '-';
+  }
+};
+
 const Activity = () => {
   const { id } = useParams<{ id: string }>();
-  // console.log(id);
-
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get attributes from Redux
   const activity = useSelector((state: RootState) =>
     state.activities.activities.find((act) => act.collectionId === id),
   );
 
   const fetchDocuments = async () => {
     if (!id) return;
-
     try {
       setLoading(true);
       const response = await myAppwrite.getDocumentsOfActivity(id);
@@ -56,16 +71,16 @@ const Activity = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between">
-        <h1 className="text-2xl font-bold mb-4">{activity.name}</h1>
-        <NavLink to={`/team/hod/activity/${id}/new`}>
-          <Button>Add New Record</Button>
-        </NavLink>
-      </div>
+    <div className="p-2">
+      <div className="-mx-4">
+        <div className="px-4">
+          <div className="flex justify-between mb-4">
+            <h1 className="text-2xl font-bold">{activity.name}</h1>
+            <NavLink to={`/team/hod/activity/${id}/new`}>
+              <Button>Add New Record</Button>
+            </NavLink>
+          </div>
 
-      <Card>
-        <CardContent className="p-6">
           {loading ? (
             <div className="space-y-3">
               <Skeleton className="h-8 w-full" />
@@ -84,33 +99,37 @@ const Activity = () => {
               <p className="text-gray-600">No documents found.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {activity.attributes.map((attr) => (
-                    <TableHead key={attr.key} className="font-semibold">
-                      {attr.key}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documents.map((doc) => (
-                  <TableRow key={doc.$id}>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {activity.attributes.map((attr) => (
-                      <TableCell key={`${doc.$id}-${attr.key}`}>
-                        {Array.isArray(doc[attr.key])
-                          ? doc[attr.key].join(', ')
-                          : doc[attr.key]?.toString() || '-'}
-                      </TableCell>
+                      <TableHead key={attr.key} className="font-semibold px-4">
+                        {formatAttributeKey(attr.key)}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {documents.map((doc) => (
+                    <TableRow key={doc.$id}>
+                      {activity.attributes.map((attr) => (
+                        <TableCell key={`${doc.$id}-${attr.key}`} className="px-4">
+                          {attr.type === 'datetime'
+                            ? formatDateTime(doc[attr.key])
+                            : Array.isArray(doc[attr.key])
+                            ? doc[attr.key].join(', ')
+                            : doc[attr.key]?.toString() || '-'}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

@@ -424,14 +424,40 @@ class MyAppwrite {
     }
   };
 
+  getDocument = async (collectionId: string, documentId: string) => {
+    try {
+      const response = db.getDocument(this.DB_ID, collectionId, documentId);
+      if (!response) {
+        throw new Error('Document not found');
+      }
+      return response;
+    } catch (error) {
+      console.log('Error fetching document: ', error);
+      throw new Error('Failed to get document');
+    }
+  };
+
+  updateDocument = async (
+    collectionId: string,
+    documentId: string,
+    data: { [key: string]: any },
+  ) => {
+    try {
+      await db.updateDocument(this.DB_ID, collectionId, documentId, data);
+    } catch (error) {
+      console.log('Error in updating document: ', error);
+      throw error;
+    }
+  };
+
   deleteDocument = async (collectionId: string, documentId: string) => {
     try {
       await db.deleteDocument(this.DB_ID, collectionId, documentId);
     } catch (error) {
-      console.log("Error deleting document: ", error)
+      console.log('Error deleting document: ', error);
       throw new Error('Failed to delete document');
     }
-  }
+  };
 }
 
 export const myAppwrite = new MyAppwrite();

@@ -155,7 +155,7 @@ const Activity = () => {
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              < TableHeader >
+              <TableHeader>
                 <TableRow>
                   <TableHead className="px-4">
                     <Checkbox
@@ -172,23 +172,32 @@ const Activity = () => {
               </TableHeader>
               <TableBody>
                 {documents.map((doc) => (
-                  <TableRow key={doc.$id}>
-                    <TableCell className="px-4">
-                      <Checkbox
-                        checked={selectedDocs.includes(doc.$id)}
-                        onCheckedChange={(checked) => handleSelectDoc(doc.$id, checked as boolean)}
-                      />
-                    </TableCell>
-                    {activity.attributes.map((attr) => (
-                      <TableCell key={`${doc.$id}-${attr.key}`} className="px-4">
-                        {attr.type === 'datetime'
-                          ? formatDateTime(doc[attr.key])
-                          : Array.isArray(doc[attr.key])
-                          ? doc[attr.key].join(', ')
-                          : doc[attr.key]?.toString() || '-'}
+                  <NavLink
+                    key={doc.$id}
+                    to={`/team/hod/activity/${id}/edit/${doc.$id}`}
+                    className="contents"
+                  >
+                    <TableRow className="cursor-pointer">
+                      <TableCell className="px-4">
+                        <Checkbox
+                          checked={selectedDocs.includes(doc.$id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectDoc(doc.$id, checked as boolean)
+                          }
+                          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
+                        />
                       </TableCell>
-                    ))}
-                  </TableRow>
+                      {activity.attributes.map((attr) => (
+                        <TableCell key={`${doc.$id}-${attr.key}`} className="px-4">
+                          {attr.type === 'datetime'
+                            ? formatDateTime(doc[attr.key])
+                            : Array.isArray(doc[attr.key])
+                            ? doc[attr.key].join(', ')
+                            : doc[attr.key]?.toString() || '-'}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </NavLink>
                 ))}
               </TableBody>
             </Table>

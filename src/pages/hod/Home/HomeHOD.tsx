@@ -3,10 +3,10 @@ import Confirmation from './Confirmation';
 
 const HomeHOD = () => {
   return (
-    <>
+    <div>
       <Confirmation />
       <Activities />
-    </>
+    </div>
   );
 };
 

@@ -16,12 +16,14 @@ class MyAppwrite {
   private readonly USER_COLLECTION_ID: string;
   private readonly DEPARTMENT_COLLECTION_ID: string;
   private readonly ACTIVITIES_COLLECTION_ID: string;
+  private readonly CONFIRMATION_COLLECTION_ID: string;
 
   constructor() {
     this.DB_ID = import.meta.env.VITE_DATABASE_ID || '';
     this.USER_COLLECTION_ID = import.meta.env.VITE_USER_COLLECTION_ID || '';
     this.DEPARTMENT_COLLECTION_ID = import.meta.env.VITE_DEPARTMENT_COLLECTION_ID || '';
     this.ACTIVITIES_COLLECTION_ID = import.meta.env.VITE_ACTIVITIES_COLLECTION_ID || '';
+    this.CONFIRMATION_COLLECTION_ID = import.meta.env.VITE_CONFIRMATION_COLLECTION_ID || '';
   }
 
   registerUser = async (name: string, email: string, password: string) => {
@@ -255,8 +257,6 @@ class MyAppwrite {
         }>;
       }> = response.activities || [];
 
-      console.log(detailedActivities);
-
       // Step 1: Fetch all documents from the activities collection
       const activitiesResponse = await db.listDocuments(this.DB_ID, this.ACTIVITIES_COLLECTION_ID);
       const activities: Array<{
@@ -458,6 +458,50 @@ class MyAppwrite {
       throw new Error('Failed to delete document');
     }
   };
+
+  getConfirmationDataOfDepartment = async (departmentId: string) => {
+    try {
+      const response = await db.listDocuments(this.DB_ID, this.CONFIRMATION_COLLECTION_ID, [
+        Query.equal('department', departmentId)
+      ])
+      if (response.documents.length < 1) {
+        throw new Error("No data for the department!")
+      }
+      return response.documents[0]
+
+    } catch (error) {
+      console.log('Error getting confirmation of department: ', error)
+      throw error;
+    }
+  }
+
+  async updateConfirmationDataOfDepartment(departmentId: string, data: {}) {
+    try {
+      // Fetch the document to get its ID
+      const response = await db.listDocuments(this.DB_ID, this.CONFIRMATION_COLLECTION_ID, [
+        Query.equal('department', departmentId)
+      ]);
+
+      if (response.documents.length < 1) {
+        throw new Error("No confirmation data found for the department!");
+      }
+
+      // Update the document using its ID
+      const documentId = response.documents[0].$id;
+      const updatedDocument = await db.updateDocument(
+        this.DB_ID,
+        this.CONFIRMATION_COLLECTION_ID,
+        documentId,
+        data
+      );
+
+      return updatedDocument;
+    } catch (error) {
+      console.log('Error updating confirmation data of department:', error);
+      throw error;
+    }
+  }
+
 }
 
 export const myAppwrite = new MyAppwrite();

@@ -502,6 +502,19 @@ class MyAppwrite {
     }
   }
 
+  getConfirmationData = async () => {
+    try {
+      const response = await db.listDocuments(this.DB_ID, this.CONFIRMATION_COLLECTION_ID);
+      if (response.documents.length < 1) {
+        throw new Error("No Confirmation Data found");
+      }
+      return response.documents;
+    } catch (error) {
+      console.log('Error getting confirmation data:', error);
+      throw error;
+    }
+  }
+
 }
 
 export const myAppwrite = new MyAppwrite();

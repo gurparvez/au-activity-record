@@ -114,7 +114,7 @@ class MyAppwrite {
       Query.equal('userId', userId),
     ]);
     if (docs.documents.length > 0) {
-      return docs.documents[0].role; // Return the role of the user
+      return docs.documents[0]; // Return the role of the user
     }
   };
 

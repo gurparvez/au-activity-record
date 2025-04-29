@@ -65,7 +65,7 @@ const Profile = () => {
       // console.log('User Role: ', userRole);
       // console.log('Department fetched:', userDepartment);
 
-      setRole(userRole);
+      setRole(userRole!.role);
       setUserDepartment(userDepartment);
     } catch (error) {
       console.error('Failed to fetch department:', error);

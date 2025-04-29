@@ -13,14 +13,15 @@ import { useEffect, useState } from 'react';
 
 const AuthCheck = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userId, role, error, departments, isLoading } = useAuthCheck();
+  const { isAuthenticated, userId, role, isApproved, error, departments, isLoading } =
+    useAuthCheck();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated && role) {
+    if (isAuthenticated && role && isApproved) {
       if (role === 'HOD') {
         navigate('/team/hod');
-      } else if (role === 'IQAC member' || role === 'IQAC HOD') {
+      } else if (role === 'IQAC member' || (role === 'IQAC HOD' && isApproved)) {
         navigate('/team/iqac');
       }
     }
@@ -52,6 +53,20 @@ const AuthCheck = () => {
 
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  }
+
+  if (!isApproved) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p>Your account is not approved yet! Wait for the administration to approve it!</p>
+        <div className="flex mt-4 gap-4">
+          <Button variant="outline" onClick={() => navigate('/login')}>
+            Go to Login
+          </Button>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
   }
 
   if (departments.length > 0 && !role) {

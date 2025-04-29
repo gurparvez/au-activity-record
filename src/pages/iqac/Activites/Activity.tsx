@@ -76,7 +76,7 @@ const Activity = () => {
         <div className="px-4">
           <div className="flex justify-between mb-4">
             <h1 className="text-2xl font-bold">{activity.name}</h1>
-            <NavLink to={`/team/hod/activity/${id}/new`}>
+            <NavLink to={`/team/iqac/activity/${id}/new`}>
               <Button>Add New Record</Button>
             </NavLink>
           </div>

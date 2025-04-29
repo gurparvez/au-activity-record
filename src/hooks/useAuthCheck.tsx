@@ -4,6 +4,7 @@ import { account, myAppwrite } from '@/api/appwrite';
 export const useAuthCheck = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isApproved, setIsApproved] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -24,7 +25,8 @@ export const useAuthCheck = () => {
           return;
         }
 
-        setRole(userRole);
+        setRole(userRole.role);
+        setIsApproved(userRole.isApproved);
         setIsLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -36,5 +38,5 @@ export const useAuthCheck = () => {
     checkAuth();
   }, []);
 
-  return { isAuthenticated, userId, role, error, departments, isLoading };
+  return { isAuthenticated, userId, role, isApproved, error, departments, isLoading };
 };

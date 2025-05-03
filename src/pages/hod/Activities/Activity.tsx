@@ -57,6 +57,8 @@ const Activity = () => {
     try {
       setLoading(true);
       const response = await myAppwrite.getDocumentsOfActivity(id);
+
+      // TODO: only show records for the department
       setDocuments(response);
     } catch (err: any) {
       setError(err.message);

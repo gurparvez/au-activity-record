@@ -283,6 +283,9 @@ class MyAppwrite {
       );
       console.log(response);
       if (!response) {
+        throw new Error("Internal server error")
+      } else {
+        return true;
       }
     } catch (error) {
       console.error('Error approving user:', error);

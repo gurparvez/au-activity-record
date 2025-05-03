@@ -17,6 +17,7 @@ class MyAppwrite {
   private readonly DEPARTMENT_COLLECTION_ID: string;
   private readonly ACTIVITIES_COLLECTION_ID: string;
   private readonly CONFIRMATION_COLLECTION_ID: string;
+  private readonly IQAC_DEPARTMENT_ID: string;
 
   constructor() {
     this.DB_ID = import.meta.env.VITE_DATABASE_ID || '';
@@ -24,13 +25,17 @@ class MyAppwrite {
     this.DEPARTMENT_COLLECTION_ID = import.meta.env.VITE_DEPARTMENT_COLLECTION_ID || '';
     this.ACTIVITIES_COLLECTION_ID = import.meta.env.VITE_ACTIVITIES_COLLECTION_ID || '';
     this.CONFIRMATION_COLLECTION_ID = import.meta.env.VITE_CONFIRMATION_COLLECTION_ID || '';
+    this.IQAC_DEPARTMENT_ID = '67f0b441002fdf7bebc4';
   }
 
   registerUser = async (name: string, email: string, password: string) => {
     const user = await account.create(ID.unique(), email, password, name);
     await db.createDocument(this.DB_ID, this.USER_COLLECTION_ID, ID.unique(), {
       userId: user.$id,
+      userName: name,
+      userEmail: email,
       departmentId: '',
+      approved: false,
     });
     await this.loginUser(email, password);
   };
@@ -68,17 +73,24 @@ class MyAppwrite {
     );
   };
 
-  registerUserDepartment = async (userId: string, departmentId: string) => {
+  registerUserDepartment = async (userId: string, userName: string, userEmail: string, departmentId: string) => {
     try {
       const userDepartment = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [
         Query.equal('userId', userId),
       ]);
+
+      let role = 'HOD';
+
+      if (departmentId === this.IQAC_DEPARTMENT_ID) {
+        role = 'IQAC member';
+      }
 
       // If a document exists, update it
       if (userDepartment.documents.length > 0) {
         const documentId = userDepartment.documents[0].$id;
         await db.updateDocument(this.DB_ID, this.USER_COLLECTION_ID, documentId, {
           departmentId: departmentId,
+          role: role,
         });
         console.log(`Updated department for user ${userId}`);
       }
@@ -86,7 +98,10 @@ class MyAppwrite {
       else {
         await db.createDocument(this.DB_ID, this.USER_COLLECTION_ID, ID.unique(), {
           userId: userId,
+          userName: userName,
+          userEmail: userEmail,
           departmentId: departmentId,
+          role: role,
         });
         console.log(`Created new department record for user ${userId}`);
       }
@@ -158,6 +173,121 @@ class MyAppwrite {
     const userDepartment = await this.getDepartment(userDepartmentId);
     if (!userDepartment) throw new Error("User's department not found!");
     return userDepartment;
+  };
+
+  getAllUsers = async () => {
+    try {
+      // Fetch all user documents from the USER collection
+      const userDocuments = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID);
+
+      // Map through users and fetch department names and user names
+      const users = await Promise.all(
+        userDocuments.documents.map(async (userDoc) => {
+          let departmentName = null;
+          let userName = null;
+
+          // Fetch department name if departmentId exists
+          if (userDoc.departmentId) {
+            try {
+              const department = await db.getDocument(
+                this.DB_ID,
+                this.DEPARTMENT_COLLECTION_ID,
+                userDoc.departmentId,
+              );
+              departmentName = department.name || null; // Assuming 'name' is the field for department name
+            } catch (error) {
+              console.error(
+                `Error fetching department ${userDoc.departmentId} for user ${userDoc.userId}:`,
+                error,
+              );
+            }
+          }
+
+          // Fetch user name from authentication
+          // try {
+          //   const user = await account.get(userDoc.userId); // Fetch user by userId
+          //   userName = user.name || null; // Get the name from the user account
+          // } catch (error) {
+          //   console.error(`Error fetching user name for user ${userDoc.userId}:`, error);
+          // }
+
+          return {
+            userId: userDoc.userId,
+            username: userDoc.userName,
+            email: userDoc.userEmail,
+            departmentId: userDoc.departmentId,
+            role: userDoc.role,
+            isApproved: userDoc.isApproved,
+            departmentName: departmentName,
+            name: userName,
+          };
+        }),
+      );
+
+      return users;
+    } catch (error) {
+      console.error('Error in getting users:', error);
+      throw new Error('Failed to fetch users');
+    }
+  };
+
+  deleteUser = async (userId: string) => {
+    try {
+      const FUNCTION_ID = import.meta.env.VITE_APPWRITE_DELETE_USER_FUNCTION_ID || '';
+      if (!FUNCTION_ID) {
+        throw new Error('VITE_APPWRITE_DELETE_USER_FUNCTION_ID is not defined');
+      }
+
+      const payload = {
+        databaseId: this.DB_ID,
+        userId: userId,
+      };
+
+      const execution = await functions.createExecution(
+        FUNCTION_ID,
+        JSON.stringify(payload),
+        false, // Asynchronous execution (set to true if you want async)
+      );
+
+      const response = JSON.parse(execution.responseBody || '{}');
+      if (!response) {
+        throw new Error('Internal Server Error!');
+      }
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      console.log(`Successfully deleted user: ${response.message}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  };
+
+  approveUser = async (userId: string) => {
+    try {
+      const documents = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [
+        Query.equal('userId', userId),
+      ]);
+      if (documents.documents.length < 1) {
+        throw new Error(`No document found in users for the user id: ${userId}`);
+      }
+      const targetDocumentId = documents.documents[0].$id;
+      const response = await db.updateDocument(
+        this.DB_ID,
+        this.USER_COLLECTION_ID,
+        targetDocumentId,
+        { isApproved: true },
+      );
+      console.log(response);
+      if (!response) {
+      }
+    } catch (error) {
+      console.error('Error approving user:', error);
+      throw error;
+    }
   };
 
   createNewActivityCollection = async (name: string, attributes: any[]) => {
@@ -462,28 +592,27 @@ class MyAppwrite {
   getConfirmationDataOfDepartment = async (departmentId: string) => {
     try {
       const response = await db.listDocuments(this.DB_ID, this.CONFIRMATION_COLLECTION_ID, [
-        Query.equal('department', departmentId)
-      ])
+        Query.equal('department', departmentId),
+      ]);
       if (response.documents.length < 1) {
-        throw new Error("No data for the department!")
+        throw new Error('No data for the department!');
       }
-      return response.documents[0]
-
+      return response.documents[0];
     } catch (error) {
-      console.log('Error getting confirmation of department: ', error)
+      console.log('Error getting confirmation of department: ', error);
       throw error;
     }
-  }
+  };
 
   async updateConfirmationDataOfDepartment(departmentId: string, data: {}) {
     try {
       // Fetch the document to get its ID
       const response = await db.listDocuments(this.DB_ID, this.CONFIRMATION_COLLECTION_ID, [
-        Query.equal('department', departmentId)
+        Query.equal('department', departmentId),
       ]);
 
       if (response.documents.length < 1) {
-        throw new Error("No confirmation data found for the department!");
+        throw new Error('No confirmation data found for the department!');
       }
 
       // Update the document using its ID
@@ -492,7 +621,7 @@ class MyAppwrite {
         this.DB_ID,
         this.CONFIRMATION_COLLECTION_ID,
         documentId,
-        data
+        data,
       );
 
       return updatedDocument;
@@ -506,15 +635,14 @@ class MyAppwrite {
     try {
       const response = await db.listDocuments(this.DB_ID, this.CONFIRMATION_COLLECTION_ID);
       if (response.documents.length < 1) {
-        throw new Error("No Confirmation Data found");
+        throw new Error('No Confirmation Data found');
       }
       return response.documents;
     } catch (error) {
       console.log('Error getting confirmation data:', error);
       throw error;
     }
-  }
-
+  };
 }
 
 export const myAppwrite = new MyAppwrite();

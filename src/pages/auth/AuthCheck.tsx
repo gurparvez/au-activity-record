@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 
 const AuthCheck = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userId, role, isApproved, error, departments, isLoading } =
+  const { isAuthenticated, userId, userName, userEmail, role, isApproved, error, departments, isLoading } =
     useAuthCheck();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
@@ -28,9 +28,9 @@ const AuthCheck = () => {
   }, [isAuthenticated, role, navigate]);
 
   const handleDepartmentSelect = async () => {
-    if (!selectedDept || !userId) return;
+    if (!selectedDept || !userId || !userName || !userEmail) return;
     try {
-      await myAppwrite.registerUserDepartment(userId, selectedDept);
+      await myAppwrite.registerUserDepartment(userId, userName, userEmail, selectedDept);
       window.location.reload(); // Refresh to trigger recheck
     } catch (err) {
       console.error('Failed to update department:', err);
@@ -55,7 +55,7 @@ const AuthCheck = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  if (!isApproved) {
+  if (!isApproved && role) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p>Your account is not approved yet! Wait for the administration to approve it!</p>

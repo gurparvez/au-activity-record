@@ -56,14 +56,47 @@ const NewActivity = ({
       isRequired: true,
       isArray: false,
     },
+    {
+      id: Date.now() + 1,
+      attributeName: 'department',
+      attributeType: 'enum',
+      isRequired: true,
+      isArray: false,
+      elements: [],
+    },
   ]);
   const [activityName, setActivityName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [whoFilled, setWhoFilled] = useState<boolean>(true);
+  const [departmentFilled, setDepartmentFilled] = useState<boolean>(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
   const [forceUpdate, setForceUpdate] = useState<boolean>(false);
+  const [departmentsLoading, setDepartmentsLoading] = useState<boolean>(true);
+  const [departmentElements, setDepartmentElements] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        setDepartmentsLoading(true);
+        const departments = await myAppwrite.getAllDepartments();
+        const departmentNames = departments.map((dept: any) => dept.name);
+        setDepartmentElements(departmentNames);
+        // Update department attribute with fetched elements
+        setAttributes((prev) =>
+          prev.map((attr) =>
+            attr.attributeName === 'department' ? { ...attr, elements: departmentNames } : attr,
+          ),
+        );
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Failed to load departments. Please try again.');
+      } finally {
+        setDepartmentsLoading(false);
+      }
+    };
+    fetchDepartments();
+  }, []);
 
   // Appwrite-compatible attribute types
   const attributeTypes: string[] = [
@@ -100,6 +133,7 @@ const NewActivity = ({
     if (isEditing && activityToEdit) {
       setActivityName(activityToEdit.title);
       setWhoFilled(activityToEdit.attributes.some((attr) => attr.key === 'user'));
+      setDepartmentFilled(activityToEdit.attributes.some((attr) => attr.key === 'department'));
       setAttributes(
         activityToEdit.attributes.map((attr, index) => ({
           id: index + 1,
@@ -131,6 +165,27 @@ const NewActivity = ({
       setAttributes((prev) => prev.filter((attr) => attr.attributeName !== 'user'));
     }
   }, [whoFilled, attributes]);
+
+  useEffect(() => {
+    if (departmentFilled && !attributes.some((attr) => attr.attributeName === 'department')) {
+      setAttributes((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          attributeName: 'department',
+          attributeType: 'enum',
+          isRequired: true,
+          isArray: false,
+          elements: departmentElements,
+        },
+      ]);
+    } else if (
+      !departmentFilled &&
+      attributes.some((attr) => attr.attributeName === 'department')
+    ) {
+      setAttributes((prev) => prev.filter((attr) => attr.attributeName !== 'department'));
+    }
+  }, [departmentFilled, attributes, departmentElements]);
 
   // Function to add new attribute
   const addAttribute = () => {
@@ -377,13 +432,23 @@ const NewActivity = ({
                 placeholder="Enter activity name"
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="who-filled"
-                checked={whoFilled}
-                onCheckedChange={(checked: boolean) => setWhoFilled(checked)}
-              />
-              <Label htmlFor="who-filled">Who filled (adds user attribute)</Label>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-1">
+                <Checkbox
+                  id="who-filled"
+                  checked={whoFilled}
+                  onCheckedChange={(checked: boolean) => setWhoFilled(checked)}
+                />
+                <Label htmlFor="who-filled">Who filled (adds user attribute)</Label>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Checkbox
+                  id="department-filled"
+                  checked={departmentFilled}
+                  onCheckedChange={(checked: boolean) => setDepartmentFilled(checked)}
+                />
+                <Label htmlFor="department-filled">Department</Label>
+              </div>
             </div>
             {attributes.map((attribute) => (
               <div className="space-y-4 border p-4 rounded-md" key={attribute.id}>
@@ -459,38 +524,49 @@ const NewActivity = ({
                 {attribute.attributeType === 'enum' && (
                   <div className="space-y-2">
                     <Label>Enum Elements</Label>
-                    {attribute.elements?.map((element, index) => (
-                      <div
-                        key={`element-${attribute.id}-${index}`}
-                        className="flex items-center space-x-2"
-                      >
-                        <Input
-                          id={`element-${attribute.id}-${index}`}
-                          value={element}
-                          onChange={(e) => updateEnumElement(attribute.id, index, e.target.value)}
-                          placeholder={`Enter enum element ${index + 1}`}
-                          aria-invalid={!element.trim()}
-                          aria-describedby={`element-error-${attribute.id}-${index}`}
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => removeEnumElement(attribute.id, index)}
-                          disabled={attribute.elements?.length === 1}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                        {!element.trim() && (
-                          <p
-                            id={`element-error-${attribute.id}-${index}`}
-                            className="text-red-500 text-sm"
-                          >
-                            Element cannot be empty.
-                          </p>
-                        )}
+                    {attribute.attributeName === 'department' && departmentsLoading ? (
+                      <div className="space-y-2">
+                        <div className="h-10 bg-gray-200 animate-pulse rounded" />
+                        <div className="h-10 bg-gray-200 animate-pulse rounded" />
                       </div>
-                    ))}
+                    ) : (
+                      attribute.elements?.map((element, index) => (
+                        <div
+                          key={`element-${attribute.id}-${index}`}
+                          className="flex items-center space-x-2"
+                        >
+                          <Input
+                            id={`element-${attribute.id}-${index}`}
+                            value={element}
+                            onChange={(e) => updateEnumElement(attribute.id, index, e.target.value)}
+                            placeholder={`Enter enum element ${index + 1}`}
+                            aria-invalid={!element.trim()}
+                            aria-describedby={`element-error-${attribute.id}-${index}`}
+                            disabled={attribute.attributeName === 'department'}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => removeEnumElement(attribute.id, index)}
+                            disabled={
+                              attribute.elements?.length === 1 ||
+                              attribute.attributeName === 'department'
+                            }
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          {!element.trim() && (
+                            <p
+                              id={`element-error-${attribute.id}-${index}`}
+                              className="text-red-500 text-sm"
+                            >
+                              Element cannot be empty.
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    )}
                     <Button
                       type="button"
                       variant="outline"

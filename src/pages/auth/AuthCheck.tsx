@@ -13,8 +13,18 @@ import { useEffect, useState } from 'react';
 
 const AuthCheck = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userId, userName, userEmail, userDepartment, role, isApproved, error, departments, isLoading } =
-    useAuthCheck();
+  const {
+    isAuthenticated,
+    userId,
+    userName,
+    userEmail,
+    userDepartment,
+    role,
+    isApproved,
+    error,
+    departments,
+    isLoading,
+  } = useAuthCheck();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,7 +40,7 @@ const AuthCheck = () => {
   const handleDepartmentSelect = async () => {
     if (!selectedDept || !userId || !userName || !userEmail) return;
     try {
-      await myAppwrite.registerUserDepartment(userId, userName, userEmail, selectedDept);
+      await myAppwrite.registerUserRoleAndDepartment(userId, userName, userEmail, selectedDept);
       window.location.reload(); // Refresh to trigger recheck
     } catch (err) {
       console.error('Failed to update department:', err);
@@ -72,7 +82,7 @@ const AuthCheck = () => {
   if (departments.length > 0 && !role) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <h2 className="text-xl mb-4">Select Your Department</h2>
+        <h2 className="text-xl mb-4">Select the Department you are HOD of, otherwise select IQAC</h2>
         <Select
           value={selectedDept ?? undefined}
           onValueChange={setSelectedDept}

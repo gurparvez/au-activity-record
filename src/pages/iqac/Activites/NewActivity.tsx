@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +27,7 @@ import { ActivityDetail } from '@/types';
 
 // Define the type for an attribute
 interface Attribute {
-  id: number;
+  id: string;
   attributeName: string;
   attributeType: string;
   isRequired: boolean;
@@ -50,14 +51,14 @@ const NewActivity = ({
 }: NewActivityProps) => {
   const [attributes, setAttributes] = useState<Attribute[]>([
     {
-      id: Date.now(),
+      id: uuidv4(),
       attributeName: 'user',
       attributeType: 'string',
       isRequired: true,
       isArray: false,
     },
     {
-      id: Date.now() + 1,
+      id: uuidv4(),
       attributeName: 'department',
       attributeType: 'enum',
       isRequired: true,
@@ -135,8 +136,8 @@ const NewActivity = ({
       setWhoFilled(activityToEdit.attributes.some((attr) => attr.key === 'user'));
       setDepartmentFilled(activityToEdit.attributes.some((attr) => attr.key === 'department'));
       setAttributes(
-        activityToEdit.attributes.map((attr, index) => ({
-          id: index + 1,
+        activityToEdit.attributes.map((attr) => ({
+          id: uuidv4(),
           attributeName: attr.key,
           attributeType: normalizeAttributeType(attr.type),
           isRequired: attr.required,
@@ -154,7 +155,7 @@ const NewActivity = ({
       setAttributes((prev) => [
         ...prev,
         {
-          id: Date.now(),
+          id: uuidv4(),
           attributeName: 'user',
           attributeType: 'string',
           isRequired: true,
@@ -171,7 +172,7 @@ const NewActivity = ({
       setAttributes((prev) => [
         ...prev,
         {
-          id: Date.now(),
+          id: uuidv4(),
           attributeName: 'department',
           attributeType: 'enum',
           isRequired: true,
@@ -192,7 +193,7 @@ const NewActivity = ({
     setAttributes([
       ...attributes,
       {
-        id: Date.now(),
+        id: uuidv4(),
         attributeName: '',
         attributeType: '',
         isRequired: false,
@@ -203,14 +204,14 @@ const NewActivity = ({
   };
 
   // Function to update attribute name
-  const updateAttributeName = (id: number, value: string) => {
+  const updateAttributeName = (id: string, value: string) => {
     setAttributes(
       attributes.map((attr) => (attr.id === id ? { ...attr, attributeName: value } : attr)),
     );
   };
 
   // Function to update attribute type
-  const updateAttributeType = (id: number, value: string) => {
+  const updateAttributeType = (id: string, value: string) => {
     setAttributes(
       attributes.map((attr) =>
         attr.id === id
@@ -221,14 +222,14 @@ const NewActivity = ({
   };
 
   // Function to update required status
-  const updateRequiredStatus = (id: number, checked: boolean) => {
+  const updateRequiredStatus = (id: string, checked: boolean) => {
     setAttributes(
       attributes.map((attr) => (attr.id === id ? { ...attr, isRequired: checked } : attr)),
     );
   };
 
   // Function to update enum elements
-  const updateEnumElement = (id: number, index: number, value: string) => {
+  const updateEnumElement = (id: string, index: number, value: string) => {
     setAttributes(
       attributes.map((attr) =>
         attr.id === id
@@ -242,7 +243,7 @@ const NewActivity = ({
   };
 
   // Function to add a new enum element
-  const addEnumElement = (id: number) => {
+  const addEnumElement = (id: string) => {
     setAttributes(
       attributes.map((attr) =>
         attr.id === id ? { ...attr, elements: [...(attr.elements || []), ''] } : attr,
@@ -251,7 +252,7 @@ const NewActivity = ({
   };
 
   // Function to remove an enum element
-  const removeEnumElement = (id: number, index: number) => {
+  const removeEnumElement = (id: string, index: number) => {
     setAttributes(
       attributes.map((attr) =>
         attr.id === id
@@ -265,7 +266,7 @@ const NewActivity = ({
   };
 
   // Function to delete an attribute
-  const deleteAttribute = (id: number) => {
+  const deleteAttribute = (id: string) => {
     setAttributes(attributes.filter((attr) => attr.id !== id));
   };
 

@@ -35,6 +35,9 @@ const Confirmation = ({ onSubmit }: ConfirmationProps) => {
         setLoading(true);
         const user = await account.get();
         const userDepartment = await myAppwrite.getUserDepartment(user.$id);
+        if (!userDepartment) {
+          throw new Error("User Department should not be null!")
+        }
         const confirmationData = await myAppwrite.getConfirmationDataOfDepartment(
           userDepartment.$id,
         );

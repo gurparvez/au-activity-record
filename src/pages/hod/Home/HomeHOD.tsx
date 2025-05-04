@@ -4,7 +4,7 @@ import Confirmation from '../../../components/Confirmation';
 const HomeHOD = () => {
   return (
     <div>
-      <Confirmation />
+      <Confirmation onSubmit={() => {console.log("Confirmation completed")}} />
       <Activities />
     </div>
   );

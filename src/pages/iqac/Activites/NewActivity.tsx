@@ -48,7 +48,15 @@ const NewActivity = ({
   isEditing = false,
   onEditComplete,
 }: NewActivityProps) => {
-  const [attributes, setAttributes] = useState<Attribute[]>([]);
+  const [attributes, setAttributes] = useState<Attribute[]>([
+    {
+      id: Date.now(),
+      attributeName: 'user',
+      attributeType: 'string',
+      isRequired: true,
+      isArray: false,
+    },
+  ]);
   const [activityName, setActivityName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,23 +116,21 @@ const NewActivity = ({
 
   // Effect to handle user attribute based on whoFilled checkbox
   useEffect(() => {
-    if (whoFilled) {
-      if (!attributes.some((attr) => attr.attributeName === 'user')) {
-        setAttributes((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            attributeName: 'user',
-            attributeType: 'string',
-            isRequired: true,
-            isArray: false,
-          },
-        ]);
-      }
-    } else {
+    if (whoFilled && !attributes.some((attr) => attr.attributeName === 'user')) {
+      setAttributes((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          attributeName: 'user',
+          attributeType: 'string',
+          isRequired: true,
+          isArray: false,
+        },
+      ]);
+    } else if (!whoFilled && attributes.some((attr) => attr.attributeName === 'user')) {
       setAttributes((prev) => prev.filter((attr) => attr.attributeName !== 'user'));
     }
-  }, [whoFilled]);
+  }, [whoFilled, attributes]);
 
   // Function to add new attribute
   const addAttribute = () => {
@@ -344,7 +350,7 @@ const NewActivity = ({
         open={open}
         onOpenChange={(open) => {
           setOpen(open);
-          if (!open) clearAll();
+          // if (!open) clearAll();
         }}
       >
         <DialogTrigger asChild>

@@ -45,7 +45,12 @@ class MyAppwrite {
   };
 
   loginWithGoogle = async () => {
-    await account.createOAuth2Session(OAuthProvider.Google);
+    await account.createOAuth2Session(
+      OAuthProvider.Google,
+      `${ROOT_URL}/`, // redirect here on success
+      `${ROOT_URL}/`, // redirect here on failure
+      // ['repo', 'user'] // scopes
+    );
   };
 
   loginUser = async (email: string, password: string) => {

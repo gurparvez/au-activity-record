@@ -6,7 +6,7 @@ import { setActivities } from '@/store/activitiesSlice';
 import { ActivityDetail } from '@/types';
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { NavLink } from 'react-router';
+import { NavLink, useParams } from 'react-router';
 
 const Activities = () => {
   // Sample data for 20 forms (replace with your actual data)
@@ -14,6 +14,8 @@ const Activities = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const dispatch = useDispatch();
+
+  const { dept } = useParams<{ dept: string }>();
 
   const fetchActivities = async () => {
     try {
@@ -69,7 +71,7 @@ const Activities = () => {
           </div>
         ) : (
           acts.map((activity, index) => (
-            <NavLink key={index} to={`/team/hod/activity/${activity.collectionId}`}>
+            <NavLink key={index} to={`/team/hod/${dept}/activity/${activity.collectionId}`}>
               <Card className="m-2 hover:cursor-pointer hover:scale-105 transition-all">
                 <CardContent className="p-6">
                   <h6 className="text-lg font-semibold">{activity.title}</h6>

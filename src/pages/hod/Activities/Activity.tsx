@@ -43,6 +43,8 @@ const formatDateTime = (dateTime: string): string => {
 
 const Activity = () => {
   const { id } = useParams<{ id: string }>();
+  const { dept } = useParams<{ dept: string }>();
+
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,15 +53,26 @@ const Activity = () => {
   const activity = useSelector((state: RootState) =>
     state.activities.activities.find((act) => act.collectionId === id),
   );
-
+  
   const fetchDocuments = async () => {
     if (!id) return;
     try {
       setLoading(true);
       const response = await myAppwrite.getDocumentsOfActivity(id);
 
-      // TODO: only show records for the department
-      setDocuments(response);
+      let departmentKey = '';
+      if (response.length > 0) {
+        const keys = Object.keys(response[0]);
+        const match = keys.find((key) => /department/i.test(key)); // case-insensitive
+        if (match) departmentKey = match;
+      }
+
+      if (!departmentKey) {
+        setDocuments(response);
+      } else {
+        const filteredDocs = response.filter((doc: Document) => doc[departmentKey] === dept);
+        setDocuments(filteredDocs);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -130,7 +143,7 @@ const Activity = () => {
               Delete
             </Button>
           )}
-          <NavLink to={`/team/hod/activity/${id}/new`}>
+          <NavLink to={`/team/hod/${dept}/activity/${id}/new`}>
             <Button>Add New Record</Button>
           </NavLink>
         </div>
@@ -176,7 +189,7 @@ const Activity = () => {
                 {documents.map((doc) => (
                   <NavLink
                     key={doc.$id}
-                    to={`/team/hod/activity/${id}/edit/${doc.$id}`}
+                    to={`/team/hod/${dept}/activity/${id}/edit/${doc.$id}`}
                     className="contents"
                   >
                     <TableRow className="cursor-pointer">

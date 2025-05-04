@@ -6,6 +6,7 @@ export const useAuthCheck = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userDepartment, setUserDepartment] = useState('');
   const [isApproved, setIsApproved] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -16,10 +17,17 @@ export const useAuthCheck = () => {
     const checkAuth = async () => {
       try {
         const user = await account.get();
-        setUserId(user.$id);
-        setUserName(user.name);
-        setUserEmail(user.email);
-        setIsAuthenticated(true);
+
+        if (!user.$id) {
+          setError('No user found!');
+        } else {
+          const userDepartment = await myAppwrite.getUserDepartment(user.$id);
+          setUserId(user.$id);
+          setUserName(user.name);
+          setUserEmail(user.email);
+          setUserDepartment(userDepartment.name);
+          setIsAuthenticated(true);
+        }
 
         const userRole = await myAppwrite.getUserRole(user.$id);
         if (!userRole) {
@@ -42,5 +50,16 @@ export const useAuthCheck = () => {
     checkAuth();
   }, []);
 
-  return { isAuthenticated, userId, userName, userEmail, role, isApproved, error, departments, isLoading };
+  return {
+    isAuthenticated,
+    userId,
+    userName,
+    userEmail,
+    userDepartment,
+    role,
+    isApproved,
+    error,
+    departments,
+    isLoading,
+  };
 };

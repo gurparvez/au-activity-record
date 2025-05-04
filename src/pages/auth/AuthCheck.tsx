@@ -13,14 +13,14 @@ import { useEffect, useState } from 'react';
 
 const AuthCheck = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, userId, userName, userEmail, role, isApproved, error, departments, isLoading } =
+  const { isAuthenticated, userId, userName, userEmail, userDepartment, role, isApproved, error, departments, isLoading } =
     useAuthCheck();
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated && role && isApproved) {
       if (role === 'HOD') {
-        navigate('/team/hod');
+        navigate(`/team/hod/${userDepartment}`);
       } else if (role === 'IQAC member' || (role === 'IQAC HOD' && isApproved)) {
         navigate('/team/iqac');
       }

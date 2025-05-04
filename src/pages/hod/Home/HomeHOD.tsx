@@ -1,5 +1,5 @@
 import Activities from './Activities';
-import Confirmation from './Confirmation';
+import Confirmation from '../../../components/Confirmation';
 
 const HomeHOD = () => {
   return (

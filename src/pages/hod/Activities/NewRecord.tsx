@@ -41,7 +41,7 @@ const formatAttributeKey = (key: string): string => {
 };
 
 const NewRecord = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, dept } = useParams<{ id: string; dept: string }>(); // Extract dept from URL
   const navigate = useNavigate();
 
   // Get activity from Redux
@@ -53,14 +53,19 @@ const NewRecord = () => {
   const [currentUserName, setCurrentUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Initialize form data, excluding user attribute
+  // Regex to match department-related fields
+  const departmentRegex = /department/i;
+
+  // Initialize form data, setting department fields to dept param
   const initialFormData: FormData =
     activity?.attributes
       .filter((attr) => attr.key !== 'user')
       .reduce(
         (acc, attr) => ({
           ...acc,
-          [attr.key]: attr.array ? [''] : '',
+          [attr.key]:
+            // Set value to dept if field matches regex, is not an array, and dept exists
+            dept && departmentRegex.test(attr.key) && !attr.array ? dept : attr.array ? [''] : '',
         }),
         {},
       ) || {};
@@ -80,6 +85,21 @@ const NewRecord = () => {
     };
     fetchUser();
   }, []);
+
+  // Update formData if dept changes (optional, for dynamic route changes)
+  useEffect(() => {
+    if (dept && activity) {
+      setFormData((prev) => {
+        const updatedFormData = { ...prev };
+        activity.attributes
+          .filter((attr) => attr.key !== 'user' && departmentRegex.test(attr.key) && !attr.array)
+          .forEach((attr) => {
+            updatedFormData[attr.key] = dept;
+          });
+        return updatedFormData;
+      });
+    }
+  }, [dept, activity]);
 
   if (!activity || !id) {
     return <div>Activity not found</div>;

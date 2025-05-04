@@ -3,11 +3,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { myAppwrite } from '@/api/appwrite';
 import { Models } from 'appwrite';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
+import Confirmation from '@/components/Confirmation';
 
 const HomeIQAC = () => {
   const [confirmationData, setConfirmationData] = useState<Models.Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isLoading, role } = useAuthCheck();
 
   const fetchConfirmationData = async () => {
     try {
@@ -26,7 +29,7 @@ const HomeIQAC = () => {
     fetchConfirmationData();
   }, []);
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="animate-spin" />
@@ -49,51 +52,53 @@ const HomeIQAC = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
-      <Card className="w-full max-w-5xl">
-        <CardHeader>
-          <CardTitle className="text-center text-xl">Confirmation Data</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="">
-                  <th className="border border-gray-300 p-2">Department</th>
-                  <th className="border border-gray-300 p-2">
-                    20.03.{confirmationData[0].year} to 25.04.{confirmationData[0].year}
-                  </th>
-                  <th className="border border-gray-300 p-2">
-                    01.08.{confirmationData[0].year} to 22.10.{confirmationData[0].year}
-                  </th>
-                  <th className="border border-gray-300 p-2">
-                    22.10.{confirmationData[0].year} to 24.01.{confirmationData[0].year + 1}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {confirmationData.map((doc) => {
-                  return (
-                    <tr key={doc.$id} className="text-center">
-                      <td className="border border-gray-300 p-2">
-                        {doc.department?.name || 'Unknown'}
-                      </td>
-                      <td className="border border-gray-300 p-2">
-                        {doc['from_20.03_to_25.04'] === '1' ? '✅' : '❌'}
-                      </td>
-                      <td className="border border-gray-300 p-2">
-                        {doc['from_01.08_to_22.10'] === '1' ? '✅' : '❌'}
-                      </td>
-                      <td className="border border-gray-300 p-2">
-                        {doc['from_22.10_to_24.01'] === '1' ? '✅' : '❌'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <div className="w-full max-w-5xl p-6 rounded-lg shadow-md">
+
+        {/* Additional Info for IQAC HOD */}
+        {role === 'IQAC HOD' && (
+          <div className="">
+            <Confirmation />
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        <h4 className="">Confirmation Data</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr>
+                <th className="border border-gray-300 p-2">Department</th>
+                <th className="border border-gray-300 p-2">
+                  20.03.{confirmationData[0]?.year} to 25.04.{confirmationData[0]?.year}
+                </th>
+                <th className="border border-gray-300 p-2">
+                  01.08.{confirmationData[0]?.year} to 22.10.{confirmationData[0]?.year}
+                </th>
+                <th className="border border-gray-300 p-2">
+                  22.10.{confirmationData[0]?.year} to 24.01.{confirmationData[0]?.year + 1}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {confirmationData.map((doc) => (
+                <tr key={doc.$id} className="text-center">
+                  <td className="border border-gray-300 p-2">
+                    {doc.department?.name || 'Unknown'}
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    {doc['from_20.03_to_25.04'] === '1' ? '✅' : '❌'}
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    {doc['from_01.08_to_22.10'] === '1' ? '✅' : '❌'}
+                  </td>
+                  <td className="border border-gray-300 p-2">
+                    {doc['from_22.10_to_24.01'] === '1' ? '✅' : '❌'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

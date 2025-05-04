@@ -13,7 +13,7 @@ const MyRoutes = () => {
       <Route path="/update-verification" element={<UpdateVerification />} />
 
       <Route
-        path="/team/hod/*" // Use wildcard to match all sub-routes
+        path="/team/hod/:dept/*" // Use wildcard to match all sub-routes
         element={<PrivateRoute element={HodRoutes} allowedRoles={['HOD']} />}
       />
       <Route

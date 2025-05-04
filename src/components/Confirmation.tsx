@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Toaster, toast } from 'sonner';
 import { account, myAppwrite } from '@/api/appwrite';
 import { Models } from 'appwrite';
@@ -14,7 +13,11 @@ interface FormData {
   'from_22.10_to_24.01': boolean;
 }
 
-const Confirmation = () => {
+interface ConfirmationProps {
+  onSubmit: () => void; // Callback to trigger refetch in parent
+}
+
+const Confirmation = ({ onSubmit }: ConfirmationProps) => {
   const [formData, setFormData] = useState<FormData>({
     'from_20.03_to_25.04': false,
     'from_01.08_to_22.10': false,
@@ -80,6 +83,9 @@ const Confirmation = () => {
         duration: 3000, // Auto-dismiss after 3 seconds
       });
 
+      // Trigger parent refetch
+      onSubmit();
+
       setLoading(false);
     } catch (err) {
       setError('Failed to update responses');
@@ -100,14 +106,10 @@ const Confirmation = () => {
   // Error state
   if (error) {
     return (
-      <Card className="max-w-md mx-auto mt-10">
-        <CardHeader>
-          <CardTitle className="text-red-600">Error</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-600">{error}</p>
-        </CardContent>
-      </Card>
+      <div className="max-w-md mx-auto mt-10 p-6 bg-red-50 border border-red-200 rounded-lg">
+        <h2 className="text-xl font-semibold text-red-600">Error</h2>
+        <p className="text-red-600 mt-2">{error}</p>
+      </div>
     );
   }
 

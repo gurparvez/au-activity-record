@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { myAppwrite } from '@/api/appwrite';
 import { Models } from 'appwrite';
@@ -39,14 +38,10 @@ const HomeIQAC = () => {
 
   if (error) {
     return (
-      <Card className="max-w-md mx-auto mt-10">
-        <CardHeader>
-          <CardTitle className="text-red-600">Error</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-red-600">{error}</p>
-        </CardContent>
-      </Card>
+      <div className="max-w-md mx-auto mt-10 p-6 bg-red-50 border border-red-200 rounded-lg">
+        <h2 className="text-xl font-semibold text-red-600">Error</h2>
+        <p className="text-red-600 mt-2">{error}</p>
+      </div>
     );
   }
 
@@ -57,23 +52,24 @@ const HomeIQAC = () => {
         {/* Additional Info for IQAC HOD */}
         {role === 'IQAC HOD' && (
           <div className="">
-            <Confirmation />
+            <Confirmation onSubmit={fetchConfirmationData} />
           </div>
         )}
 
-        <h4 className="">Confirmation Data</h4>
+        {/* Existing Table */}
+        <h4>Confirmation Data</h4>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-300">
             <thead>
               <tr>
-                <th className="border border-gray-300 p-2">Department</th>
-                <th className="border border-gray-300 p-2">
+                <th scope="col" className="border border-gray-300 p-2">Department</th>
+                <th scope="col" className="border border-gray-300 p-2">
                   20.03.{confirmationData[0]?.year} to 25.04.{confirmationData[0]?.year}
                 </th>
-                <th className="border border-gray-300 p-2">
+                <th scope="col" className="border border-gray-300 p-2">
                   01.08.{confirmationData[0]?.year} to 22.10.{confirmationData[0]?.year}
                 </th>
-                <th className="border border-gray-300 p-2">
+                <th scope="col" className="border border-gray-300 p-2">
                   22.10.{confirmationData[0]?.year} to 24.01.{confirmationData[0]?.year + 1}
                 </th>
               </tr>

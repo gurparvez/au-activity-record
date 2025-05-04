@@ -25,7 +25,7 @@ export const useAuthCheck = () => {
           setUserId(user.$id);
           setUserName(user.name);
           setUserEmail(user.email);
-          setUserDepartment(userDepartment.name);
+          if (userDepartment) setUserDepartment(userDepartment.name);
           setIsAuthenticated(true);
         }
 

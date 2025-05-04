@@ -168,7 +168,7 @@ class MyAppwrite {
 
   getUserDepartment = async (userId: string) => {
     const userDepartmentId = await this.getUserDepartmentId(userId);
-    if (!userDepartmentId) throw new Error('Department not found!');
+    if (!userDepartmentId) return null;
 
     const userDepartment = await this.getDepartment(userDepartmentId);
     if (!userDepartment) throw new Error("User's department not found!");
@@ -292,6 +292,47 @@ class MyAppwrite {
       throw error;
     }
   };
+
+  updateUserRole = async (userId: string, role: string) => {
+    try {
+      // Fetch the target user's document
+      const users = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [Query.equal('userId', userId)]);
+      if (users.documents.length < 1) {
+        throw new Error("No user found!");
+      }
+
+      // Fetch the current authenticated user
+      const thisUser = await account.get();
+      const thisUsers = await db.listDocuments(this.DB_ID, this.USER_COLLECTION_ID, [Query.equal('userId', thisUser.$id)]);
+      if (thisUsers.documents.length < 1) {
+        throw new Error("You are not authenticated!");
+      }
+
+      const thisUserRole = thisUsers.documents[0].role;
+      const documentId = users.documents[0].$id;
+
+      // Role-based access control
+      if (thisUserRole === "IQAC member") {
+        if (role === "IQAC HOD") {
+          throw new Error("IQAC members can only assign the 'IQAC member' and 'HOD' role!");
+        }
+      } else if (thisUserRole === "IQAC HOD") {
+        if (!["HOD", "IQAC member", "IQAC HOD"].includes(role)) {
+          throw new Error("Invalid role selected!");
+        }
+      } else {
+        throw new Error("You do not have permission to change roles!");
+      }
+
+      // Update the target user's role
+      await db.updateDocument(this.DB_ID, this.USER_COLLECTION_ID, documentId, { role });
+
+      return { success: true, message: `User role updated to ${role}` };
+    } catch (error) {
+      console.error('Error updating role of user:', error);
+      throw error;
+    }
+}
 
   createNewActivityCollection = async (name: string, attributes: any[]) => {
     const user = await account.get();

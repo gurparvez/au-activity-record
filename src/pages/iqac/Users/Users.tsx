@@ -21,6 +21,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import ChangeRole from './ChangeRole';
 
 const Users = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -85,10 +86,6 @@ const Users = () => {
 
   const handleRemove = async (userId: string) => {
     console.log('Remove user:', userId);
-  };
-
-  const handleChangeRole = (userId: string) => {
-    console.log('Change role for user:', userId);
   };
 
   const approvedUsers = users.filter((u) => u.isApproved);
@@ -176,9 +173,13 @@ const Users = () => {
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Button variant="secondary" onClick={() => handleChangeRole(user.userId)}>
-                        Change Role
-                      </Button>
+                      <ChangeRole
+                        user={user}
+                        onSuccess={() => {
+                          fetchUsers();
+                        }}
+                      />
+
                       <Button
                         size="sm"
                         variant="destructive"

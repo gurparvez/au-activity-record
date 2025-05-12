@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink } from 'react-router';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import Profile from '@/components/Profile';

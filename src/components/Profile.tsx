@@ -23,11 +23,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Models } from 'appwrite';
 
-const Profile = () => {
+const Profile = ({ onProfileClick }: { onProfileClick?: () => void }) => {
   const navigate = useNavigate();
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [userLoading, setUserLoading] = useState(false);
@@ -37,6 +37,14 @@ const Profile = () => {
   const [Role, setRole] = useState('');
   const [userDepartment, setUserDepartment] = useState<Models.Document | null>(null);
   const [nameInput, setNameInput] = useState('');
+
+  const sheetContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (sheetContentRef.current) {
+      sheetContentRef.current.focus(); // Ensure SheetContent takes focus
+    }
+  }, []);
 
   const getUser = async () => {
     try {
@@ -115,10 +123,16 @@ const Profile = () => {
 
   return (
     <Sheet>
-      <SheetTrigger asChild>
+      <SheetTrigger
+        asChild
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onProfileClick) onProfileClick();
+        }}
+      >
         <Button variant="outline">Profile</Button>
       </SheetTrigger>
-      <SheetContent>
+      <SheetContent ref={sheetContentRef} tabIndex={-1}>
         <SheetHeader>
           <SheetTitle>Edit Profile</SheetTitle>
           <SheetDescription>

@@ -8,20 +8,23 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
 
 const navLinks = [
   { name: 'Home', path: '/' },
 ];
 
 const Navbar: React.FC = () => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   return (
     <nav className="border-b shadow-md fixed w-full z-10 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo and Title */}
           <NavLink to="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-            <img src="https://flowbite.com/docs/images/logo.svg" className="h-8" alt="Logo" />
-            <span className="text-2xl font-semibold whitespace-nowrap text-foreground">
+            <img src="https://flowbite.com/docs/images/logo.svg" className="h-6 md:h-8" alt="Logo" />
+            <span className="text-xl md:text-2xl font-semibold whitespace-nowrap text-foreground">
               AU Activity Record
             </span>
           </NavLink>
@@ -44,8 +47,9 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Dropdown Menu */}
-          <div className="md:hidden flex items-center">
-            <DropdownMenu>
+          <div className="md:hidden flex items-center space-x-2">
+            <Profile onProfileClick={() => setIsDropdownOpen(false)} />
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <button className="focus:outline-none">
                   <svg
@@ -75,11 +79,6 @@ const Navbar: React.FC = () => {
                 <DropdownMenuItem asChild>
                   <div className="w-full">
                     <ThemeToggle />
-                  </div>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <div className="w-full">
-                    <Profile />
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>

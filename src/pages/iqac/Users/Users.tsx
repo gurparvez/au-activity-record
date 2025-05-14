@@ -21,10 +21,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input'; // Add Input component
 import ChangeRole from './ChangeRole';
 
 const Users = () => {
   const [users, setUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]); // New state for filtered users
+  const [searchQuery, setSearchQuery] = useState<string>(''); // State for search input
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -42,11 +45,30 @@ const Users = () => {
       const allUsers = await myAppwrite.getAllUsers();
       console.log(allUsers);
       setUsers(allUsers);
+      setFilteredUsers(allUsers.filter((u) => u.isApproved)); // Initialize with approved users
     } catch (err: any) {
       setError('Failed to fetch users. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle search input changes
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+
+    // Filter approved users based on username, email, role, or departmentName
+    const filtered = users.filter((user) => {
+      if (!user.isApproved) return false; // Only include approved users
+      return (
+        (user.username || user.userId).toLowerCase().includes(query) ||
+        (user.email || user.userId).toLowerCase().includes(query) ||
+        user.role.toLowerCase().includes(query) ||
+        user.departmentName.toLowerCase().includes(query)
+      );
+    });
+    setFilteredUsers(filtered);
   };
 
   useEffect(() => {
@@ -58,6 +80,7 @@ const Users = () => {
     try {
       await myAppwrite.deleteUser(userId);
       setUsers((prev) => prev.filter((user) => user.userId !== userId));
+      setFilteredUsers((prev) => prev.filter((user) => user.userId !== userId));
     } catch (err: any) {
       setDialogTitle('Deletion Failed');
       setDialogMessage('Failed to delete user. Please try again.');
@@ -75,6 +98,9 @@ const Users = () => {
         setUsers((prev) =>
           prev.map((user) => (user.userId === userId ? { ...user, isApproved: true } : user)),
         );
+        setFilteredUsers((prev) =>
+          prev.map((user) => (user.userId === userId ? { ...user, isApproved: true } : user)),
+        );
       }
     } catch (error) {
       console.error(error);
@@ -88,7 +114,6 @@ const Users = () => {
     console.log('Remove user:', userId);
   };
 
-  const approvedUsers = users.filter((u) => u.isApproved);
   const unapprovedUsers = users.filter((u) => !u.isApproved);
 
   return (
@@ -133,13 +158,22 @@ const Users = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-4">
         <h1>Users</h1>
-        <ApproveUsersDialog
-          unapprovedUsers={unapprovedUsers}
-          onApprove={handleApprove}
-          onRemove={handleRemove}
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            type="text"
+            placeholder="Search users..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="w-64"
+          />
+          <ApproveUsersDialog
+            unapprovedUsers={unapprovedUsers}
+            onApprove={handleApprove}
+            onRemove={handleRemove}
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -149,9 +183,15 @@ const Users = () => {
         </div>
       ) : error ? (
         <div className="text-red-500 text-center">{error}</div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-600">
+            {searchQuery ? 'No users match your search.' : 'No approved users found.'}
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {approvedUsers.map((user) => {
+          {filteredUsers.map((user) => {
             const isDeleting = deletingUserId === user.userId;
             const deleteError = deleteErrors[user.userId];
 
@@ -179,7 +219,6 @@ const Users = () => {
                           fetchUsers();
                         }}
                       />
-
                       <Button
                         size="sm"
                         variant="destructive"

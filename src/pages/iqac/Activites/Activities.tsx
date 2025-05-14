@@ -9,6 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input'; // Add Input component
 import NewActivity from './NewActivity';
 import { myAppwrite } from '@/api/appwrite';
 import { ActivityDetail } from '@/types';
@@ -20,6 +21,8 @@ import { Loader2 } from 'lucide-react';
 
 const Activities = () => {
   const [acts, setActs] = useState<ActivityDetail[]>([]);
+  const [filteredActs, setFilteredActs] = useState<ActivityDetail[]>([]); // New state for filtered activities
+  const [searchQuery, setSearchQuery] = useState<string>(''); // State for search input
   const [loading, setLoading] = useState<boolean>(true);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +53,7 @@ const Activities = () => {
       }));
 
       setActs(processedActivityDetails);
+      setFilteredActs(processedActivityDetails); // Initialize filteredActs with all activities
       dispatch(
         setActivities(
           processedDetailedActivities.map((activity) => ({
@@ -80,6 +84,18 @@ const Activities = () => {
     }
   };
 
+  // Handle search input changes
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQuery(query);
+
+    // Filter activities based on title
+    const filtered = acts.filter((activity) =>
+      activity.title.toLowerCase().includes(query)
+    );
+    setFilteredActs(filtered);
+  };
+
   const openDeleteModal = (collectionId: string) => {
     setActivityToDelete(collectionId);
     setIsModalOpen(true);
@@ -100,10 +116,16 @@ const Activities = () => {
 
   return (
     <>
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center mb-4">
         <h1>Activities</h1>
-        <div className="flex items-center *:mx-2">
-          {/* <Button variant="outline">Select</Button> */}
+        <div className="flex items-center gap-2">
+          <Input
+            type="text"
+            placeholder="Search activities..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="w-64"
+          />
           <NewActivity
             onActivityCreated={fetchActivities}
             activityToEdit={activityToEdit}
@@ -130,12 +152,14 @@ const Activities = () => {
               Retry
             </Button>
           </div>
-        ) : acts.length === 0 ? (
+        ) : filteredActs.length === 0 ? (
           <div className="col-span-full text-center py-8">
-            <p className="text-gray-600">No activities found.</p>
+            <p className="text-gray-600">
+              {searchQuery ? 'No activities match your search.' : 'No activities found.'}
+            </p>
           </div>
         ) : (
-          acts.map((activity, index) => (
+          filteredActs.map((activity, index) => (
             <NavLink key={index} to={`/team/iqac/activity/${activity.collectionId}`}>
               <Card className="m-2 hover:cursor-default hover:scale-105 transition-all">
                 <CardContent className="p-6 relative">

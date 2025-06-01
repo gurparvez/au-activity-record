@@ -1,7 +1,7 @@
 import { myAppwrite } from '@/api/appwrite';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { NavLink, useParams } from 'react-router';
+import { NavLink, useNavigate, useParams } from 'react-router';
 import {
   Table,
   TableBody,
@@ -47,6 +47,7 @@ const Activity = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   const activity = useSelector((state: RootState) =>
     state.activities.activities.find((act) => act.collectionId === id),
@@ -130,6 +131,9 @@ const Activity = () => {
                   Delete
                 </Button>
               )}
+              <Button variant="secondary" onClick={() => {
+                navigate(`/team/iqac/activity/${id}/download`);
+              }}>Download</Button>
               <NavLink to={`/team/iqac/activity/${id}/new`}>
                 <Button>Add New Record</Button>
               </NavLink>

@@ -1,7 +1,7 @@
 import { myAppwrite } from '@/api/appwrite';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { NavLink, useParams } from 'react-router';
+import { NavLink, useNavigate, useParams } from 'react-router';
 import {
   Table,
   TableBody,
@@ -49,6 +49,8 @@ const Activity = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+
+  const navigate = useNavigate();
 
   const activity = useSelector((state: RootState) =>
     state.activities.activities.find((act) => act.collectionId === id),
@@ -143,6 +145,14 @@ const Activity = () => {
               Delete
             </Button>
           )}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              navigate(`/team/hod/${dept}/activity/${id}/download`);
+            }}
+          >
+            Download
+          </Button>
           <NavLink to={`/team/hod/${dept}/activity/${id}/new`}>
             <Button>Add New Record</Button>
           </NavLink>
@@ -191,9 +201,7 @@ const Activity = () => {
                     <TableCell className="px-4">
                       <Checkbox
                         checked={selectedDocs.includes(doc.$id)}
-                        onCheckedChange={(checked) =>
-                          handleSelectDoc(doc.$id, checked as boolean)
-                        }
+                        onCheckedChange={(checked) => handleSelectDoc(doc.$id, checked as boolean)}
                         onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
                       />
                     </TableCell>

@@ -53,7 +53,7 @@ const Activity = () => {
   const activity = useSelector((state: RootState) =>
     state.activities.activities.find((act) => act.collectionId === id),
   );
-  
+
   const fetchDocuments = async () => {
     if (!id) return;
     try {
@@ -187,21 +187,20 @@ const Activity = () => {
               </TableHeader>
               <TableBody>
                 {documents.map((doc) => (
-                  <NavLink
-                    key={doc.$id}
-                    to={`/team/hod/${dept}/activity/${id}/edit/${doc.$id}`}
-                    className="contents"
-                  >
-                    <TableRow className="cursor-pointer">
-                      <TableCell className="px-4">
-                        <Checkbox
-                          checked={selectedDocs.includes(doc.$id)}
-                          onCheckedChange={(checked) =>
-                            handleSelectDoc(doc.$id, checked as boolean)
-                          }
-                          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
-                        />
-                      </TableCell>
+                  <TableRow key={doc.$id} className="cursor-pointer">
+                    <TableCell className="px-4">
+                      <Checkbox
+                        checked={selectedDocs.includes(doc.$id)}
+                        onCheckedChange={(checked) =>
+                          handleSelectDoc(doc.$id, checked as boolean)
+                        }
+                        onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
+                      />
+                    </TableCell>
+                    <NavLink
+                      to={`/team/hod/${dept}/activity/${id}/edit/${doc.$id}`}
+                      className="contents"
+                    >
                       {activity.attributes.map((attr) => (
                         <TableCell key={`${doc.$id}-${attr.key}`} className="px-4">
                           {attr.type === 'datetime'
@@ -211,8 +210,8 @@ const Activity = () => {
                             : doc[attr.key]?.toString() || '-'}
                         </TableCell>
                       ))}
-                    </TableRow>
-                  </NavLink>
+                    </NavLink>
+                  </TableRow>
                 ))}
               </TableBody>
             </Table>

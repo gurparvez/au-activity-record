@@ -14,6 +14,8 @@ import { RootState } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatAttributeKey } from '@/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2 } from 'lucide-react';
 
 interface Document {
   $id: string;
@@ -44,6 +46,7 @@ const Activity = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
   const activity = useSelector((state: RootState) =>
     state.activities.activities.find((act) => act.collectionId === id),
@@ -62,6 +65,41 @@ const Activity = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id || selectedDocs.length === 0) return;
+    try {
+      setLoading(true);
+      await Promise.all(
+        selectedDocs.map((docId) => {
+          console.log(docId);
+          return myAppwrite.deleteDocument(id, docId);
+        }),
+      );
+      setDocuments(documents.filter((doc) => !selectedDocs.includes(doc.$id)));
+      setSelectedDocs([]);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDocs(documents.map((doc) => doc.$id));
+    } else {
+      setSelectedDocs([]);
+    }
+  };
+
+  const handleSelectDoc = (docId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedDocs([...selectedDocs, docId]);
+    } else {
+      setSelectedDocs(selectedDocs.filter((id) => id !== docId));
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
   }, [id]);
@@ -76,9 +114,26 @@ const Activity = () => {
         <div className="px-4">
           <div className="flex justify-between mb-4">
             <h1 className="text-2xl font-bold">{activity.name}</h1>
-            <NavLink to={`/team/iqac/activity/${id}/new`}>
-              <Button>Add New Record</Button>
-            </NavLink>
+            <div className="flex gap-2">
+              {loading ? (
+                <Button variant="destructive" disabled>
+                  Delete
+                  <Loader2 className="animate-spin" />
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={selectedDocs.length === 0}
+                  className={selectedDocs.length === 0 ? 'opacity-50' : ''}
+                >
+                  Delete
+                </Button>
+              )}
+              <NavLink to={`/team/iqac/activity/${id}/new`}>
+                <Button>Add New Record</Button>
+              </NavLink>
+            </div>
           </div>
 
           {loading ? (
@@ -103,6 +158,12 @@ const Activity = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="px-4">
+                      <Checkbox
+                        checked={selectedDocs.length === documents.length && documents.length > 0}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
                     {activity.attributes.map((attr) => (
                       <TableHead key={attr.key} className="font-semibold px-4">
                         {formatAttributeKey(attr.key)}
@@ -112,16 +173,30 @@ const Activity = () => {
                 </TableHeader>
                 <TableBody>
                   {documents.map((doc) => (
-                    <TableRow key={doc.$id}>
-                      {activity.attributes.map((attr) => (
-                        <TableCell key={`${doc.$id}-${attr.key}`} className="px-4">
-                          {attr.type === 'datetime'
-                            ? formatDateTime(doc[attr.key])
-                            : Array.isArray(doc[attr.key])
-                            ? doc[attr.key].join(', ')
-                            : doc[attr.key]?.toString() || '-'}
-                        </TableCell>
-                      ))}
+                    <TableRow key={doc.$id} className="cursor-pointer">
+                      <TableCell className="px-4">
+                        <Checkbox
+                          checked={selectedDocs.includes(doc.$id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectDoc(doc.$id, checked as boolean)
+                          }
+                          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
+                        />
+                      </TableCell>
+                      <NavLink
+                        to={`/team/iqac/activity/${id}/edit/${doc.$id}`}
+                        className="contents"
+                      >
+                        {activity.attributes.map((attr) => (
+                          <TableCell key={`${doc.$id}-${attr.key}`} className="px-4">
+                            {attr.type === 'datetime'
+                              ? formatDateTime(doc[attr.key])
+                              : Array.isArray(doc[attr.key])
+                              ? doc[attr.key].join(', ')
+                              : doc[attr.key]?.toString() || '-'}
+                          </TableCell>
+                        ))}
+                      </NavLink>
                     </TableRow>
                   ))}
                 </TableBody>

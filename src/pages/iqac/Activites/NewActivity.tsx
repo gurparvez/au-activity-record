@@ -406,7 +406,7 @@ const NewActivity = ({
         open={open}
         onOpenChange={(open) => {
           setOpen(open);
-          // if (!open) clearAll();
+          if (!open && isEditing) clearAll();
         }}
       >
         <DialogTrigger asChild>

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { formatAttributeKey } from '@/utils/formatAttributeKey';
 
 interface Attribute {
   key: string;
@@ -26,19 +27,6 @@ interface Attribute {
 interface FormData {
   [key: string]: any;
 }
-
-// Helper function to format attribute keys (e.g., link_to_website -> Link to website)
-const formatAttributeKey = (key: string): string => {
-  return key
-    .split('_')
-    .map((word, index) => {
-      if (index === 0) {
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-      }
-      return word.toLowerCase();
-    })
-    .join(' ');
-};
 
 const NewRecord = () => {
   const { id, dept } = useParams<{ id: string; dept: string }>(); // Extract dept from URL

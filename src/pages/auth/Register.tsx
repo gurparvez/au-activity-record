@@ -7,36 +7,37 @@ import { useTheme } from '@/components/theme-provider';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Loader2 } from 'lucide-react';
+import { getErrorMessage } from '@/types';
+
+interface RegisterFormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 const Register = () => {
   const [backendError, setBackendError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit } = useForm();
+  const { register, handleSubmit } = useForm<RegisterFormData>();
   const themeContext = useTheme();
   const navigate = useNavigate();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: RegisterFormData) => {
     setBackendError(null);
     setLoading(true);
     try {
-      console.log('Register form submitted', data);
       if (data.password !== data.confirmPassword) {
         throw Error('Passwords should match!');
       }
 
-      const response = await myAppwrite.registerUser(data.name, data.email, data.password);
-      console.log(response);
-
+      await myAppwrite.registerUser(data.name, data.email, data.password);
       await myAppwrite.sendUserVerificationEmail();
       navigate('/verify');
     } catch (error) {
-      console.log(error);
-      if (error instanceof Error) {
-        setBackendError(error.message);
-      } else {
-        setBackendError('An unknown error occurred');
-      }
+      console.error('Registration error:', error);
+      setBackendError(getErrorMessage(error));
     } finally {
       setLoading(false);
     }

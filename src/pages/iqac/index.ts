@@ -1,9 +1,9 @@
 import HomeIQAC from "./Home/HomeIQAC";
 import OutletIqac from "./OutletIqac";
-import Activities from "./Activites/Activities";
+import Activities from "./Activities/Activities";
 import Users from "./Users/Users";
-import ShowActivity from "./Activites/ShowActivity";
-import Activity from "./Activites/Activity";
+import ShowActivity from "./Activities/ShowActivity";
+import Activity from "./Activities/Activity";
 
 export {
   HomeIQAC,
